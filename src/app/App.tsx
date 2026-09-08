@@ -9,6 +9,7 @@ import { Input } from "./components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "./components/ui/tabs";
 import { ScrollArea } from "./components/ui/scroll-area";
 import { Badge } from "./components/ui/badge";
+import logoUrl from "./logo.png";
 
 interface Product {
   id: string;
@@ -131,7 +132,6 @@ export default function App() {
       {/* Products Section */}
       <div className="flex-1 flex flex-col overflow-hidden">
         <div className="p-6 border-b border-border">
-          <h1 className="mb-4">Kasir POS</h1>
           <div className="relative mb-4">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input

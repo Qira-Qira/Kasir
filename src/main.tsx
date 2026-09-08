@@ -1,6 +1,6 @@
 import { createRoot } from "react-dom/client";
 import App from "./app/App";
-import faviconUrl from "./app/favicon.ico";
+import faviconUrl from "./app/logo.png";
 import "./styles/index.css";
 
 const favicon = document.createElement("link");

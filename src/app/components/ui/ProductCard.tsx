@@ -30,7 +30,7 @@ export function ProductCard({ name, price, category, image, onAdd }: ProductCard
           <p className="text-primary">Rp {price.toLocaleString('id-ID')}</p>
           <Button size="sm" onClick={onAdd} className="gap-2">
             <Plus className="h-4 w-4" />
-            Add
+            Tambah
           </Button>
         </div>
       </div>

@@ -1,5 +1,5 @@
 import { Minus, Plus, Trash2 } from "lucide-react";
-import { Button } from "./ui/button";
+import { Button } from "./button";
 
 interface CartItemProps {
   id: string;

@@ -211,10 +211,6 @@ export default function App() {
           )}
           
           <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Subtotal</span>
-              <span>Rp {totalAmount.toLocaleString('id-ID')}</span>
-            </div>
             <div className="flex justify-between pt-2 border-t border-border">
               <span>Total</span>
               <span>Rp {totalAmount.toLocaleString('id-ID')}</span>

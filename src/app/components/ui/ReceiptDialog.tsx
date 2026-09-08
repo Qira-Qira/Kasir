@@ -87,10 +87,6 @@ export function ReceiptDialog({
           <Separator />
 
           <div className="space-y-2">
-            <div className="flex justify-between">
-              <span>Subtotal</span>
-              <span>Rp {total.toLocaleString('id-ID')}</span>
-            </div>
             {paymentMethod === "cash" && (
               <>
                 <div className="flex justify-between text-sm">

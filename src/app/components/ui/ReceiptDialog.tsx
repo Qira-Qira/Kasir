@@ -4,9 +4,9 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "./ui/dialog";
-import { Button } from "./ui/button";
-import { Separator } from "./ui/separator";
+} from "./dialog";
+import { Button } from "./button";
+import { Separator } from "./separator";
 
 interface ReceiptItem {
   name: string;

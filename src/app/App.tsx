@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { Search, ShoppingCart, Clock, Trash2 } from "lucide-react";
-import { ProductCard } from "./components/ProductCard";
-import { CartItem } from "./components/CartItem";
-import { PaymentDialog } from "./components/PaymentDialog";
-import { ReceiptDialog } from "./components/ReceiptDialog";
+import { ProductCard } from "./components/ui/ProductCard";
+import { CartItem } from "./components/ui/CartItem";
+import { PaymentDialog } from "./components/ui/PaymentDialog";
+import { ReceiptDialog } from "./components/ui/ReceiptDialog";
 import { Button } from "./components/ui/button";
 import { Input } from "./components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "./components/ui/tabs";

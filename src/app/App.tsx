@@ -15,7 +15,6 @@ interface Product {
   name: string;
   price: number;
   category: string;
-  image: string;
 }
 
 interface CartItemType {
@@ -35,18 +34,18 @@ interface Transaction {
 }
 
 const MOCK_PRODUCTS: Product[] = [
-  { id: "1", name: "Espresso", price: 15000, category: "Kopi", image: "https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?w=400" },
-  { id: "2", name: "Cappuccino", price: 25000, category: "Kopi", image: "https://images.unsplash.com/photo-1572442388796-11668a67e53d?w=400" },
-  { id: "3", name: "Latte", price: 28000, category: "Kopi", image: "https://images.unsplash.com/photo-1561882468-9110e03e0f78?w=400" },
-  { id: "4", name: "Americano", price: 20000, category: "Kopi", image: "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=400" },
-  { id: "5", name: "Croissant", price: 18000, category: "Makanan", image: "https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=400" },
-  { id: "6", name: "Chocolate Cake", price: 35000, category: "Makanan", image: "https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=400" },
-  { id: "7", name: "Blueberry Muffin", price: 22000, category: "Makanan", image: "https://images.unsplash.com/photo-1607958996333-41aef7caefaa?w=400" },
-  { id: "8", name: "Green Tea", price: 15000, category: "Teh", image: "https://images.unsplash.com/photo-1564890369478-c89ca6d9cda9?w=400" },
-  { id: "9", name: "Iced Tea", price: 12000, category: "Teh", image: "https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=400" },
-  { id: "10", name: "Sandwich", price: 30000, category: "Makanan", image: "https://images.unsplash.com/photo-1528735602780-2552fd46c7af?w=400" },
-  { id: "11", name: "Smoothie Bowl", price: 38000, category: "Makanan", image: "https://images.unsplash.com/photo-1590301157890-4810ed352733?w=400" },
-  { id: "12", name: "Orange Juice", price: 18000, category: "Minuman", image: "https://images.unsplash.com/photo-1600271886742-f049cd451bba?w=400" },
+  { id: "1", name: "Espresso", price: 15000, category: "Kopi" },
+  { id: "2", name: "Cappuccino", price: 25000, category: "Kopi" },
+  { id: "3", name: "Latte", price: 28000, category: "Kopi" },
+  { id: "4", name: "Americano", price: 20000, category: "Kopi" },
+  { id: "5", name: "Croissant", price: 18000, category: "Makanan" },
+  { id: "6", name: "Chocolate Cake", price: 35000, category: "Makanan" },
+  { id: "7", name: "Blueberry Muffin", price: 22000, category: "Makanan" },
+  { id: "8", name: "Green Tea", price: 15000, category: "Teh" },
+  { id: "9", name: "Iced Tea", price: 12000, category: "Teh" },
+  { id: "10", name: "Sandwich", price: 30000, category: "Makanan" },
+  { id: "11", name: "Smoothie Bowl", price: 38000, category: "Makanan" },
+  { id: "12", name: "Orange Juice", price: 18000, category: "Minuman" },
 ];
 
 export default function App() {

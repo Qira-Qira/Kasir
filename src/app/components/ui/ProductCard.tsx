@@ -12,10 +12,9 @@ interface ProductCardProps {
 
 export function ProductCard({ name, price, category, onAdd }: ProductCardProps) {
   const categoryColor = {
-    Kopi: "bg-amber-100 text-amber-800",
-    Makanan: "bg-orange-100 text-orange-800",
-    Teh: "bg-emerald-100 text-emerald-800",
     Minuman: "bg-sky-100 text-sky-800",
+    Makanan: "bg-orange-100 text-orange-800",
+    Snack: "bg-amber-100 text-amber-800",
   }[category] ?? "bg-muted text-muted-foreground";
 
   return (

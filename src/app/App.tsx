@@ -34,15 +34,15 @@ interface Transaction {
 }
 
 const MOCK_PRODUCTS: Product[] = [
-  { id: "1", name: "Espresso", price: 15000, category: "Kopi" },
-  { id: "2", name: "Cappuccino", price: 25000, category: "Kopi" },
-  { id: "3", name: "Latte", price: 28000, category: "Kopi" },
-  { id: "4", name: "Americano", price: 20000, category: "Kopi" },
-  { id: "5", name: "Croissant", price: 18000, category: "Makanan" },
-  { id: "6", name: "Chocolate Cake", price: 35000, category: "Makanan" },
-  { id: "7", name: "Blueberry Muffin", price: 22000, category: "Makanan" },
-  { id: "8", name: "Green Tea", price: 15000, category: "Teh" },
-  { id: "9", name: "Iced Tea", price: 12000, category: "Teh" },
+  { id: "1", name: "Espresso", price: 15000, category: "Minuman" },
+  { id: "2", name: "Cappuccino", price: 25000, category: "Minuman" },
+  { id: "3", name: "Latte", price: 28000, category: "Minuman" },
+  { id: "4", name: "Americano", price: 20000, category: "Minuman" },
+  { id: "5", name: "Croissant", price: 18000, category: "Snack" },
+  { id: "6", name: "Chocolate Cake", price: 35000, category: "Snack" },
+  { id: "7", name: "Blueberry Muffin", price: 22000, category: "Snack" },
+  { id: "8", name: "Green Tea", price: 15000, category: "Minuman" },
+  { id: "9", name: "Iced Tea", price: 12000, category: "Minuman" },
   { id: "10", name: "Sandwich", price: 30000, category: "Makanan" },
   { id: "11", name: "Smoothie Bowl", price: 38000, category: "Makanan" },
   { id: "12", name: "Orange Juice", price: 18000, category: "Minuman" },
@@ -57,7 +57,7 @@ export default function App() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [currentTransaction, setCurrentTransaction] = useState<Transaction | null>(null);
 
-  const categories = ["Semua", "Kopi", "Makanan", "Teh", "Minuman"];
+  const categories = ["Semua", "Minuman", "Makanan", "Snack"];
 
   const filteredProducts = MOCK_PRODUCTS.filter((product) => {
     const matchesCategory = selectedCategory === "Semua" || product.category === selectedCategory;

@@ -15,6 +15,8 @@ import {
   Settings,
   ShieldCheck,
   ShoppingCart,
+  Sun,
+  Moon,
   Trash2,
   TrendingUp,
   Users,
@@ -162,6 +164,7 @@ export default function App() {
   const [products, setProducts] = useState<Product[]>(MOCK_PRODUCTS);
   const [selectedCategory, setSelectedCategory] = useState("Semua");
   const [searchQuery, setSearchQuery] = useState("");
+  const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
   const [newProduct, setNewProduct] = useState({ name: "", price: "", category: "Minuman", stock: "" });
   const [newUser, setNewUser] = useState({ name: "", username: "", password: "", role: "kasir" as Role });
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
@@ -307,6 +310,7 @@ export default function App() {
     ]);
 
     setNewProduct({ name: "", price: "", category: "Minuman", stock: "" });
+    setIsAddMenuOpen(false);
   };
 
   const handleDeleteProduct = (id: string) => {
@@ -1308,13 +1312,14 @@ export default function App() {
             </nav>
           </div>
 
-          <div className="rounded-2xl border border-[#ead8c1] bg-[#fffaf5] p-3">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#8d6d5a]">Status</p>
-            <div className="mt-2 flex items-center gap-2 text-sm font-medium text-[#2b1d18]">
-              <span className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-500" />
-              Online
-            </div>
-          </div>
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="flex w-full items-center justify-center gap-2 rounded-2xl border border-[#ead8c1] bg-[#fffaf5] px-3 py-3 text-sm font-medium text-[#4d382f] transition hover:bg-[#f5ebdf]"
+          >
+            <LogOut className="h-4 w-4" />
+            Logout
+          </button>
         </aside>
 
         <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
@@ -1326,29 +1331,31 @@ export default function App() {
                 <h1 className={`mt-1 text-2xl font-semibold ${isDarkMode ? "text-[#f3f4f6]" : "text-[#2b1d18]"}`}>POSLite ESB</h1>
               </div>
 
-              <div className="flex flex-wrap items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => setIsDarkMode((prev) => !prev)}
-                  className={`rounded-full border px-3 py-2 text-sm font-medium ${isDarkMode ? "border-[#2f3747] bg-[#1f2937] text-[#f3f4f6]" : "border-[#e7d4ba] bg-[#fffaf5] text-[#4d382f] hover:bg-[#f5ebdf]"}`}
-                >
-                  {isDarkMode ? "Light mode" : "Dark mode"}
-                </button>
-                <div className={`rounded-full px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] ${isDarkMode ? "bg-[#1f2937] text-[#d9cab6]" : "bg-[#f1e9df] text-[#6d5045]"}`}>
-                  {auth?.name}
-                </div>
+              <div className="ml-auto flex flex-wrap items-center gap-3">
                 <div className={`flex items-center gap-2 rounded-full px-3 py-2 text-sm font-medium shadow-inner ${isDarkMode ? "bg-[#1f2937] text-[#f3f4f6] shadow-[#0b1220]" : "bg-[#f3e6d9] text-[#534036] shadow-[#f0e2d6]"}`}>
                   <Clock className="h-4 w-4" />
                   {currentTime}
                 </div>
-                <button
-                  type="button"
-                  onClick={handleLogout}
-                  className={`flex items-center gap-2 rounded-full border px-3 py-2 text-sm font-medium ${isDarkMode ? "border-[#2f3747] bg-[#1f2937] text-[#f3f4f6] hover:bg-[#2b333f]" : "border-[#e7d4ba] bg-[#fffaf5] text-[#4d382f] hover:bg-[#f5ebdf]"}`}
-                >
-                  <LogOut className="h-4 w-4" />
-                  Logout
-                </button>
+                <div className="flex items-center gap-2 rounded-full border border-[#ead8c1] bg-[#fffaf5]/80 p-1.5 shadow-sm">
+                  <button
+                    type="button"
+                    onClick={() => setIsDarkMode(false)}
+                    className={`flex h-9 w-9 items-center justify-center rounded-full transition ${!isDarkMode ? "bg-[#7c4a2d] text-[#fffaf5] shadow-[0_8px_18px_rgba(124,74,45,0.20)]" : "text-[#5d4337] hover:bg-[#f3e7d9]"}`}
+                    aria-label="Light mode"
+                    title="Light mode"
+                  >
+                    <Sun className="h-4 w-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsDarkMode(true)}
+                    className={`flex h-9 w-9 items-center justify-center rounded-full transition ${isDarkMode ? "bg-[#1f2937] text-[#f3f4f6] shadow-[0_8px_18px_rgba(17,24,39,0.20)]" : "text-[#5d4337] hover:bg-[#f3e7d9]"}`}
+                    aria-label="Dark mode"
+                    title="Dark mode"
+                  >
+                    <Moon className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -1357,26 +1364,64 @@ export default function App() {
           <div className="min-h-0 flex-1 p-4 sm:p-5 md:p-6">
             {activeView === "Kasir" || activeView === "Menu" ? (
               <>
-                <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#8d6d5a]">Menu</p>
-                    <h2 className="mt-1 text-xl font-semibold text-[#2b1d18]">Pilihan Produk</h2>
+                <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8a6a52]" />
+                    <Input
+                      placeholder="Cari produk..."
+                      value={searchQuery}
+                      onChange={(event) => setSearchQuery(event.target.value)}
+                      className="h-12 rounded-2xl border-[#ebdcc7] bg-[#f9f2ea] pl-11 text-[#2b1d18] placeholder:text-[#9a8479] focus:ring-[#c98b5b]"
+                    />
                   </div>
 
-                  <div className="rounded-full bg-[#f4e9dd] px-3 py-1.5 text-sm font-medium text-[#5a453c] shadow-sm">
-                    {filteredProducts.length} item
-                  </div>
+                  {auth?.role === "admin" && (
+                    <Button
+                      type="button"
+                      onClick={() => setIsAddMenuOpen((prev) => !prev)}
+                      className="h-12 rounded-2xl bg-[#7c4a2d] px-4 text-sm font-medium text-[#fffaf5] hover:bg-[#6d3f2a]"
+                    >
+                      {isAddMenuOpen ? "Tutup" : "Tambah Menu"}
+                    </Button>
+                  )}
                 </div>
 
-                <div className="relative mb-5">
-                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8a6a52]" />
-                  <Input
-                    placeholder="Cari produk..."
-                    value={searchQuery}
-                    onChange={(event) => setSearchQuery(event.target.value)}
-                    className="h-12 rounded-2xl border-[#ebdcc7] bg-[#f9f2ea] pl-11 text-[#2b1d18] placeholder:text-[#9a8479] focus:ring-[#c98b5b]"
-                  />
-                </div>
+                {auth?.role === "admin" && isAddMenuOpen && (
+                  <form onSubmit={handleAddProduct} className="mb-5 grid gap-3 rounded-[24px] border border-[#eddcc3] bg-[#fffaf5] p-4 shadow-[0_12px_24px_rgba(88,63,46,0.04)] md:grid-cols-2 xl:grid-cols-5">
+                    <Input
+                      value={newProduct.name}
+                      onChange={(event) => setNewProduct((prev) => ({ ...prev, name: event.target.value }))}
+                      placeholder="Nama produk"
+                      className="h-11 rounded-2xl border-[#ebdcc7] bg-[#f9f2ea] text-[#2b1d18]"
+                    />
+                    <Input
+                      type="number"
+                      value={newProduct.price}
+                      onChange={(event) => setNewProduct((prev) => ({ ...prev, price: event.target.value }))}
+                      placeholder="Harga"
+                      className="h-11 rounded-2xl border-[#ebdcc7] bg-[#f9f2ea] text-[#2b1d18]"
+                    />
+                    <select
+                      value={newProduct.category}
+                      onChange={(event) => setNewProduct((prev) => ({ ...prev, category: event.target.value }))}
+                      className="h-11 rounded-2xl border border-[#ebdcc7] bg-[#f9f2ea] px-3 text-[#2b1d18] outline-none"
+                    >
+                      {categories.filter((item) => item !== "Semua").map((category) => (
+                        <option key={category} value={category}>{category}</option>
+                      ))}
+                    </select>
+                    <Input
+                      type="number"
+                      value={newProduct.stock}
+                      onChange={(event) => setNewProduct((prev) => ({ ...prev, stock: event.target.value }))}
+                      placeholder="Stok"
+                      className="h-11 rounded-2xl border-[#ebdcc7] bg-[#f9f2ea] text-[#2b1d18]"
+                    />
+                    <Button type="submit" className="h-11 rounded-2xl bg-[#7c4a2d] text-[#fffaf5] hover:bg-[#6d3f2a]">
+                      Simpan
+                    </Button>
+                  </form>
+                )}
 
                 <Tabs value={selectedCategory} onValueChange={setSelectedCategory}>
                   <TabsList className="mb-5 h-auto w-full flex-wrap justify-start gap-1.5 rounded-2xl border border-[#ebdcc7] bg-[#f8f0e9] p-1.5">

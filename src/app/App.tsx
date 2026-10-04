@@ -9,7 +9,6 @@ import { Input } from "./components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "./components/ui/tabs";
 import { ScrollArea } from "./components/ui/scroll-area";
 import { Badge } from "./components/ui/badge";
-import logoUrl from "./logo.png";
 
 interface Product {
   id: string;

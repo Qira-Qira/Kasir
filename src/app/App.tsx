@@ -10,6 +10,7 @@ import {
   LayoutGrid,
   ListOrdered,
   LogOut,
+  Package,
   Search,
   Settings,
   ShieldCheck,
@@ -30,8 +31,8 @@ import { Tabs, TabsList, TabsTrigger } from "./components/ui/tabs";
 import { ScrollArea } from "./components/ui/scroll-area";
 import { Badge } from "./components/ui/badge";
 
-type Role = "admin" | "investor" | "user";
-type ViewKey = "Kasir" | "Menu" | "Laporan" | "Pengaturan" | "Dashboard";
+type Role = "admin" | "investor" | "kasir";
+type ViewKey = "Kasir" | "Menu" | "Laporan" | "Stok" | "Dashboard";
 
 interface Product {
   id: string;
@@ -94,13 +95,13 @@ const MOCK_PRODUCTS: Product[] = [
 const USER_ACCOUNTS: UserAccount[] = [
   { username: "admin", password: "admin123", role: "admin", name: "Admin POS" },
   { username: "investor", password: "investor123", role: "investor", name: "Investor Team" },
-  { username: "user", password: "user123", role: "user", name: "Kasir User" },
+  { username: "kasir", password: "kasir123", role: "kasir", name: "Kasir Outlet" },
 ];
 
 const ROLE_OPTIONS = [
   { role: "admin" as const, label: "Admin", subtitle: "Kelola semua operasional", icon: ShieldCheck },
   { role: "investor" as const, label: "Investor", subtitle: "Pantau performa bisnis", icon: BriefcaseBusiness },
-  { role: "user" as const, label: "User", subtitle: "Kasir & penjualan harian", icon: Users },
+  { role: "kasir" as const, label: "Kasir", subtitle: "Kasir & penjualan harian", icon: Users },
 ];
 
 const ROLE_CONFIG: Record<
@@ -115,10 +116,9 @@ const ROLE_CONFIG: Record<
   admin: {
     label: "Admin",
     navItems: [
-      { key: "Kasir", label: "Kasir", icon: LayoutGrid },
       { key: "Menu", label: "Menu", icon: ListOrdered },
+      { key: "Stok", label: "Stok", icon: Package },
       { key: "Laporan", label: "Laporan", icon: BarChart3 },
-      { key: "Pengaturan", label: "Pengaturan", icon: Settings },
     ],
     accent: "bg-[#f4e6d7] text-[#5d4337]",
     badge: "bg-[#7c4a2d] text-white",
@@ -132,8 +132,8 @@ const ROLE_CONFIG: Record<
     accent: "bg-[#edf3ef] text-[#2d5b45]",
     badge: "bg-[#2d5b45] text-white",
   },
-  user: {
-    label: "User",
+  kasir: {
+    label: "Kasir",
     navItems: [
       { key: "Kasir", label: "Kasir", icon: LayoutGrid },
       { key: "Menu", label: "Menu", icon: ListOrdered },
@@ -154,7 +154,7 @@ const formatCurrency = (value: number) =>
 export default function App() {
   const [auth, setAuth] = useState<AuthState | null>(null);
   const [systemUsers, setSystemUsers] = useState<UserAccount[]>(USER_ACCOUNTS);
-  const [loginForm, setLoginForm] = useState({ username: "admin", password: "admin123", role: "admin" as Role });
+  const [loginForm, setLoginForm] = useState({ username: "admin", password: "admin123" });
   const [loginError, setLoginError] = useState("");
   const [activeView, setActiveView] = useState<ViewKey>("Kasir");
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -163,11 +163,11 @@ export default function App() {
   const [selectedCategory, setSelectedCategory] = useState("Semua");
   const [searchQuery, setSearchQuery] = useState("");
   const [newProduct, setNewProduct] = useState({ name: "", price: "", category: "Minuman", stock: "" });
-  const [newUser, setNewUser] = useState({ name: "", username: "", password: "", role: "user" as Role });
+  const [newUser, setNewUser] = useState({ name: "", username: "", password: "", role: "kasir" as Role });
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
   const [productDraft, setProductDraft] = useState({ name: "", price: "", category: "Minuman", stock: "" });
   const [editingUserUsername, setEditingUserUsername] = useState<string | null>(null);
-  const [userDraft, setUserDraft] = useState({ name: "", username: "", password: "", role: "user" as Role });
+  const [userDraft, setUserDraft] = useState({ name: "", username: "", password: "", role: "kasir" as Role });
   const [restockProductId, setRestockProductId] = useState<string | null>(null);
   const [restockQty, setRestockQty] = useState("10");
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
@@ -191,12 +191,6 @@ export default function App() {
 
   const roleConfig = auth ? ROLE_CONFIG[auth.role] : ROLE_CONFIG.admin;
   const visibleNavItems = useMemo(() => roleConfig.navItems, [roleConfig]);
-
-  const salesStats = [
-    { label: auth ? `${roleConfig.label} Overview` : "Pendapatan", value: "Rp 2.4Jt", accent: "bg-[#f4e6d7] text-[#5d4337]" },
-    { label: "Transaksi", value: "164", accent: "bg-[#edf3ef] text-[#2d5b45]" },
-    { label: "Akses", value: auth ? roleConfig.label : "Admin", accent: "bg-[#fbe7df] text-[#8d4c3d]" },
-  ];
 
   const recentTransactions = transactions.slice(0, 3);
   const filteredTransactions =
@@ -386,7 +380,7 @@ export default function App() {
     );
 
     setEditingUserUsername(null);
-    setUserDraft({ name: "", username: "", password: "", role: "user" });
+    setUserDraft({ name: "", username: "", password: "", role: "kasir" });
   };
 
   const handleAddUser = (event: React.FormEvent<HTMLFormElement>) => {
@@ -416,7 +410,7 @@ export default function App() {
       ];
     });
 
-    setNewUser({ name: "", username: "", password: "", role: "user" });
+    setNewUser({ name: "", username: "", password: "", role: "kasir" });
   };
 
   const handleDeleteUser = (username: string) => {
@@ -455,16 +449,11 @@ export default function App() {
 
     const trimmedUsername = loginForm.username.trim().toLowerCase();
     const matchedUser = systemUsers.find(
-      (user) => user.username === trimmedUsername && user.role === loginForm.role
+      (user) => user.username === trimmedUsername && user.password === loginForm.password
     );
 
     if (!matchedUser) {
-      setLoginError("Username atau role tidak valid. Silakan gunakan data akun yang tersedia.");
-      return;
-    }
-
-    if (loginForm.password !== matchedUser.password) {
-      setLoginError("Password yang Anda masukkan salah.");
+      setLoginError("Username atau password tidak valid.");
       return;
     }
 
@@ -490,15 +479,6 @@ export default function App() {
 
   const renderDashboardView = () => (
     <div className="space-y-5">
-      <div className="grid gap-4 md:grid-cols-3">
-        {salesStats.map((stat) => (
-          <div key={stat.label} className={`rounded-2xl border border-[#eddcc3] p-4 ${stat.accent}`}>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] opacity-80">{stat.label}</p>
-            <p className="mt-2 text-xl font-semibold text-[#2b1d18]">{stat.value}</p>
-          </div>
-        ))}
-      </div>
-
       <div className="grid gap-4 lg:grid-cols-[1.5fr_1fr]">
         <div className="rounded-[24px] border border-[#eddcc3] bg-[#fffaf5] p-5 shadow-[0_12px_24px_rgba(88,63,46,0.04)]">
           <div className="flex items-center justify-between">
@@ -640,22 +620,23 @@ export default function App() {
 
   const renderMenuView = () => (
     <div className="space-y-5">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#8d6d5a]">Catalog</p>
-          <h2 className="mt-1 text-xl font-semibold text-[#2b1d18]">Manajemen Menu</h2>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#8d6d5a]">Menu</p>
+          <h2 className="mt-1 text-xl font-semibold text-[#2b1d18]">Pilihan Produk</h2>
         </div>
+
         <div className="rounded-full bg-[#f4e9dd] px-3 py-1.5 text-sm font-medium text-[#5a453c] shadow-sm">
-          {products.length} produk
+          {filteredProducts.length} item
         </div>
       </div>
 
-      <div className="relative">
+      <div className="relative mb-5">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8a6a52]" />
         <Input
-          placeholder="Cari menu..."
+          placeholder="Cari produk..."
           value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
+          onChange={(event) => setSearchQuery(event.target.value)}
           className="h-12 rounded-2xl border-[#ebdcc7] bg-[#f9f2ea] pl-11 text-[#2b1d18] placeholder:text-[#9a8479] focus:ring-[#c98b5b]"
         />
       </div>
@@ -680,35 +661,22 @@ export default function App() {
         </TabsList>
       </Tabs>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {filteredProducts.map((product) => (
-          <div key={product.id} className="rounded-[24px] border border-[#eddcc3] bg-[#fffaf5] p-4 shadow-[0_12px_24px_rgba(88,63,46,0.04)]">
-            <div className="flex items-center justify-between">
-              <span className="rounded-full bg-[#f4e6d7] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#5d4337]">
-                {product.category}
-              </span>
-              <span className="text-sm font-semibold text-[#7c4a2d]">{formatCurrency(product.price)}</span>
-            </div>
-            <h3 className="mt-4 text-lg font-semibold text-[#2b1d18]">{product.name}</h3>
-            <p className="mt-2 text-sm text-[#7d685f]">Menu favorit pelanggan yang siap diproses di kasir.</p>
-
-            <div className="mt-3 flex items-center justify-between text-xs text-[#7d685f]">
-              <span>Stok</span>
-              <span className={`font-semibold ${product.stock <= 10 ? "text-[#a95d3a]" : "text-[#2d5b45]"}`}>
-                {product.stock} pcs
-              </span>
-            </div>
-
-            <Button
-              className="mt-4 w-full rounded-2xl bg-[#7c4a2d] text-[#fffaf5] hover:bg-[#6d3f2a] disabled:cursor-not-allowed disabled:bg-[#d8c8b5]"
-              onClick={() => addToCart(product)}
+      <ScrollArea className="min-h-0 min-w-0 flex-1 h-[260px] sm:h-[320px] xl:h-[calc(100%-240px)]">
+        <div className="grid min-w-0 grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 xl:grid-cols-4">
+          {filteredProducts.map((product) => (
+            <ProductCard
+              key={product.id}
+              id={product.id}
+              name={product.name}
+              price={product.price}
+              category={product.category}
+              stock={product.stock}
               disabled={auth?.role === "investor" || product.stock <= 0}
-            >
-              {auth?.role === "investor" ? "Read Only" : product.stock <= 0 ? "Stok Habis" : "Tambah ke Keranjang"}
-            </Button>
-          </div>
-        ))}
-      </div>
+              onAdd={() => addToCart(product)}
+            />
+          ))}
+        </div>
+      </ScrollArea>
     </div>
   );
 
@@ -859,57 +827,24 @@ export default function App() {
     </div>
   );
 
-  const renderSettingsView = () => (
-    <div className="grid gap-4 md:grid-cols-2">
-      <div className="rounded-[24px] border border-[#eddcc3] bg-[#fffaf5] p-5 shadow-[0_12px_24px_rgba(88,63,46,0.04)]">
-        <div className="flex items-center gap-3">
-          <div className="rounded-full bg-[#f3e9dc] p-2 text-[#5d4235]">
-            <ShieldCheck className="h-4 w-4" />
-          </div>
-          <h3 className="text-lg font-semibold text-[#2b1d18]">Hak Akses</h3>
+  const renderStockView = () => (
+    <div className="space-y-5">
+      <div className="grid gap-4 md:grid-cols-3">
+        <div className="rounded-[24px] border border-[#eddcc3] bg-[#fffaf5] p-4 shadow-[0_12px_24px_rgba(88,63,46,0.04)]">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#8d6d5a]">Total Item</p>
+          <p className="mt-2 text-2xl font-semibold text-[#2b1d18]">{products.length}</p>
         </div>
-
-        <div className="mt-5 space-y-3 text-sm text-[#5f493d]">
-          <div className="flex items-center justify-between rounded-2xl bg-[#f8f0e7] p-3">
-            <span>Kelola kasir</span>
-            <Badge className="bg-[#7c4a2d] text-white">Aktif</Badge>
-          </div>
-          <div className="flex items-center justify-between rounded-2xl bg-[#f8f0e7] p-3">
-            <span>Atur menu</span>
-            <Badge className="bg-[#7c4a2d] text-white">Aktif</Badge>
-          </div>
-          <div className="flex items-center justify-between rounded-2xl bg-[#f8f0e7] p-3">
-            <span>Melihat laporan</span>
-            <Badge className="bg-[#7c4a2d] text-white">Aktif</Badge>
-          </div>
+        <div className="rounded-[24px] border border-[#eddcc3] bg-[#fffaf5] p-4 shadow-[0_12px_24px_rgba(88,63,46,0.04)]">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#8d6d5a]">Low Stock</p>
+          <p className="mt-2 text-2xl font-semibold text-[#2b1d18]">{products.filter((product) => product.stock <= 10).length}</p>
+        </div>
+        <div className="rounded-[24px] border border-[#eddcc3] bg-[#fffaf5] p-4 shadow-[0_12px_24px_rgba(88,63,46,0.04)]">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#8d6d5a]">Status</p>
+          <p className="mt-2 text-2xl font-semibold text-[#2b1d18]">{products.filter((product) => product.stock <= 10).length === 0 ? "Aman" : "Perlu Tindak"}</p>
         </div>
       </div>
 
       <div className="rounded-[24px] border border-[#eddcc3] bg-[#fffaf5] p-5 shadow-[0_12px_24px_rgba(88,63,46,0.04)]">
-        <div className="flex items-center gap-3">
-          <div className="rounded-full bg-[#f3e9dc] p-2 text-[#5d4235]">
-            <Settings className="h-4 w-4" />
-          </div>
-          <h3 className="text-lg font-semibold text-[#2b1d18]">Preferensi</h3>
-        </div>
-
-        <div className="mt-5 space-y-3 text-sm text-[#5f493d]">
-          <div className="flex items-center justify-between rounded-2xl bg-[#f8f0e7] p-3">
-            <span>Print struk otomatis</span>
-            <span className="font-semibold text-[#2b1d18]">On</span>
-          </div>
-          <div className="flex items-center justify-between rounded-2xl bg-[#f8f0e7] p-3">
-            <span>Mode cepat</span>
-            <span className="font-semibold text-[#2b1d18]">On</span>
-          </div>
-          <div className="flex items-center justify-between rounded-2xl bg-[#f8f0e7] p-3">
-            <span>Notifikasi</span>
-            <span className="font-semibold text-[#2b1d18]">On</span>
-          </div>
-        </div>
-      </div>
-
-      <div className="rounded-[24px] border border-[#eddcc3] bg-[#fffaf5] p-5 shadow-[0_12px_24px_rgba(88,63,46,0.04)] md:col-span-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="rounded-full bg-[#f3e9dc] p-2 text-[#5d4235]">
@@ -1137,14 +1072,14 @@ export default function App() {
           <div className="rounded-full bg-[#f3e9dc] p-2 text-[#5d4235]">
             <Users className="h-4 w-4" />
           </div>
-          <h3 className="text-lg font-semibold text-[#2b1d18]">Kelola User</h3>
+          <h3 className="text-lg font-semibold text-[#2b1d18]">Kelola Kasir</h3>
         </div>
 
         <form onSubmit={handleAddUser} className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
           <Input
             value={newUser.name}
             onChange={(event) => setNewUser((prev) => ({ ...prev, name: event.target.value }))}
-            placeholder="Nama user"
+            placeholder="Nama kasir"
             className="h-11 rounded-2xl border-[#ebdcc7] bg-[#f9f2ea] text-[#2b1d18]"
           />
           <Input
@@ -1167,7 +1102,7 @@ export default function App() {
           >
             <option value="admin">Admin</option>
             <option value="investor">Investor</option>
-            <option value="user">User</option>
+            <option value="kasir">Kasir</option>
           </select>
           <Button type="submit" className="h-11 rounded-2xl bg-[#7c4a2d] text-[#fffaf5] hover:bg-[#6d3f2a]">
             Tambah
@@ -1205,7 +1140,7 @@ export default function App() {
                     >
                       <option value="admin">Admin</option>
                       <option value="investor">Investor</option>
-                      <option value="user">User</option>
+                      <option value="kasir">Kasir</option>
                     </select>
                     <div className="flex gap-2">
                       <button
@@ -1268,8 +1203,8 @@ export default function App() {
         return renderMenuView();
       case "Laporan":
         return renderReportView();
-      case "Pengaturan":
-        return renderSettingsView();
+      case "Stok":
+        return renderStockView();
       case "Kasir":
       default:
         return null;
@@ -1283,130 +1218,53 @@ export default function App() {
 
     return (
       <div className={`flex min-h-screen items-center justify-center p-4 sm:p-6 ${shellClass}`}>
-        <div className={`grid w-full max-w-5xl overflow-hidden rounded-[32px] border shadow-[0_40px_90px_rgba(70,42,28,0.16)] backdrop-blur-sm lg:grid-cols-[1.15fr_0.85fr] ${isDarkMode ? "border-[#2f3747] bg-[#1f2937]/95" : "border-[#ebdcc7] bg-[#fffaf5]/95"}`}>
-          <div className={`border-b p-6 lg:border-b-0 lg:border-r ${isDarkMode ? "border-[#2f3747] bg-[linear-gradient(135deg,#171d29_0%,#1f2937_100%)]" : "border-[#ebdcc7] bg-[linear-gradient(135deg,#fffaf5_0%,#f8eee4_100%)]"}`}>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className={`text-[10px] font-semibold uppercase tracking-[0.22em] ${isDarkMode ? "text-[#c7b39a]" : "text-[#8d6d5a]"}`}>System</p>
-                <h1 className={`mt-2 text-3xl font-semibold ${isDarkMode ? "text-[#f3f4f6]" : "text-[#2b1d18]"}`}>POSLite</h1>
-              </div>
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#7c4a2d] text-lg font-bold text-[#fffaf5] shadow-[0_12px_20px_rgba(124,74,45,0.18)]">
-                P
-              </div>
+        <div className={`w-full max-w-md rounded-[28px] border p-6 shadow-[0_40px_90px_rgba(70,42,28,0.16)] backdrop-blur-sm ${isDarkMode ? "border-[#2f3747] bg-[#1f2937]/95" : "border-[#ebdcc7] bg-[#fffaf5]/95"}`}>
+          <div className="flex items-center justify-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#7c4a2d] text-lg font-bold text-[#fffaf5] shadow-[0_12px_20px_rgba(124,74,45,0.18)]">
+              P
             </div>
-
-            <div className="mt-8 space-y-4">
-              <div className={`rounded-[24px] p-4 ${isDarkMode ? "bg-[#232c39]" : "bg-[#f7efe8]"}`}>
-                <p className={`text-[10px] font-semibold uppercase tracking-[0.18em] ${isDarkMode ? "text-[#d9cab6]" : "text-[#8d6d5a]"}`}>Overview</p>
-                <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                  <div className={`rounded-2xl p-3 ${isDarkMode ? "bg-[#1d2533] text-white" : "bg-[#f4e6d7] text-[#2b1d18]"}`}>
-                    <p className={`text-[10px] uppercase tracking-[0.12em] ${isDarkMode ? "text-[#d9cab6]" : "text-[#866c5d]"}`}>Sales</p>
-                    <p className="mt-2 text-lg font-semibold">Rp 2.4Jt</p>
-                  </div>
-                  <div className={`rounded-2xl p-3 ${isDarkMode ? "bg-[#1d2533] text-white" : "bg-[#edf3ef] text-[#2b1d18]"}`}>
-                    <p className={`text-[10px] uppercase tracking-[0.12em] ${isDarkMode ? "text-[#d9cab6]" : "text-[#6d8175]"}`}>Orders</p>
-                    <p className="mt-2 text-lg font-semibold">164</p>
-                  </div>
-                  <div className={`rounded-2xl p-3 ${isDarkMode ? "bg-[#1d2533] text-white" : "bg-[#fbe7df] text-[#2b1d18]"}`}>
-                    <p className={`text-[10px] uppercase tracking-[0.12em] ${isDarkMode ? "text-[#d9cab6]" : "text-[#8f6d61]"}`}>Users</p>
-                    <p className="mt-2 text-lg font-semibold">23</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className={`rounded-[24px] border p-4 ${isDarkMode ? "border-[#2f3747] bg-[#1f2937]" : "border-[#ebdcc7] bg-[#fffaf5]"}`}>
-                <p className={`text-[10px] font-semibold uppercase tracking-[0.18em] ${isDarkMode ? "text-[#d9cab6]" : "text-[#8d6d5a]"}`}>Choose access</p>
-                <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                  {ROLE_OPTIONS.map(({ role, label, subtitle, icon: Icon }) => (
-                    <button
-                      key={role}
-                      type="button"
-                      onClick={() => setLoginForm((prev) => ({ ...prev, role }))}
-                      className={`rounded-2xl border p-3 text-left transition-all ${loginForm.role === role ? (isDarkMode ? "border-[#c98b5b] bg-[#2b333f]" : "border-[#7c4a2d] bg-[#f3e7d9]") : isDarkMode ? "border-[#2f3747] bg-[#222d3c] hover:bg-[#2b333f]" : "border-[#ebdcc7] bg-[#f8f0e9] hover:bg-[#f3e7d9]"}`}
-                    >
-                      <div className={`mb-3 flex h-10 w-10 items-center justify-center rounded-xl shadow-sm ${isDarkMode ? "bg-[#1a2330] text-[#f3f4f6]" : "bg-[#fffaf5] text-[#5d4235]"}`}>
-                        <Icon className="h-4 w-4" />
-                      </div>
-                      <p className={`text-sm font-semibold ${isDarkMode ? "text-[#f3f4f6]" : "text-[#2b1d18]"}`}>{label}</p>
-                      <p className={`mt-1 text-[11px] ${isDarkMode ? "text-[#d9cab6]" : "text-[#7d685f]"}`}>{subtitle}</p>
-                    </button>
-                  ))}
-                </div>
-              </div>
+            <div>
+              <p className={`text-[10px] font-semibold uppercase tracking-[0.22em] ${isDarkMode ? "text-[#d9cab6]" : "text-[#8d6d5a]"}`}>System</p>
+              <h1 className={`mt-1 text-2xl font-semibold ${isDarkMode ? "text-[#f3f4f6]" : "text-[#2b1d18]"}`}>POSLite</h1>
             </div>
           </div>
 
-          <div className="p-6">
-            <form onSubmit={handleLogin} className="space-y-5">
-              <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#8d6d5a]">Login</p>
-                <h2 className="mt-2 text-2xl font-semibold text-[#2b1d18]">Masuk ke Sistem</h2>
+          <form onSubmit={handleLogin} className="mt-6 space-y-4">
+            <div>
+              <h2 className={`text-2xl font-semibold ${isDarkMode ? "text-[#f3f4f6]" : "text-[#2b1d18]"}`}>Login</h2>
+            </div>
+
+            <div className="space-y-2">
+              <label className={`text-sm font-medium ${isDarkMode ? "text-[#e5e7eb]" : "text-[#4d382f]"}`}>Username</label>
+              <Input
+                value={loginForm.username}
+                onChange={(event) => setLoginForm((prev) => ({ ...prev, username: event.target.value }))}
+                placeholder="Masukkan username"
+                className="h-11 rounded-2xl border-[#ebdcc7] bg-[#f9f2ea] text-[#2b1d18] placeholder:text-[#9a8479] focus:ring-[#c98b5b]"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className={`text-sm font-medium ${isDarkMode ? "text-[#e5e7eb]" : "text-[#4d382f]"}`}>Password</label>
+              <Input
+                type="password"
+                value={loginForm.password}
+                onChange={(event) => setLoginForm((prev) => ({ ...prev, password: event.target.value }))}
+                placeholder="Masukkan password"
+                className="h-11 rounded-2xl border-[#ebdcc7] bg-[#f9f2ea] text-[#2b1d18] placeholder:text-[#9a8479] focus:ring-[#c98b5b]"
+              />
+            </div>
+
+            {loginError && (
+              <div className="rounded-2xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">
+                {loginError}
               </div>
+            )}
 
-              <div className="rounded-[22px] border border-[#ebdcc7] bg-[#f8f0e9] p-3">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#8d6d5a]">Selected role</p>
-                <div className="mt-2 flex items-center justify-between">
-                  <span className="text-base font-semibold capitalize text-[#2b1d18]">{loginForm.role}</span>
-                  <Badge className="rounded-full bg-[#7c4a2d] text-white">{loginForm.role === "admin" ? "Full access" : loginForm.role === "investor" ? "View only" : "Kasir"}</Badge>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-[#4d382f]">Username</label>
-                <Input
-                  value={loginForm.username}
-                  onChange={(event) => setLoginForm((prev) => ({ ...prev, username: event.target.value }))}
-                  placeholder="Masukkan username"
-                  className="h-11 rounded-2xl border-[#ebdcc7] bg-[#f9f2ea] text-[#2b1d18] placeholder:text-[#9a8479] focus:ring-[#c98b5b]"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-[#4d382f]">Password</label>
-                <Input
-                  type="password"
-                  value={loginForm.password}
-                  onChange={(event) => setLoginForm((prev) => ({ ...prev, password: event.target.value }))}
-                  placeholder="Masukkan password"
-                  className="h-11 rounded-2xl border-[#ebdcc7] bg-[#f9f2ea] text-[#2b1d18] placeholder:text-[#9a8479] focus:ring-[#c98b5b]"
-                />
-              </div>
-
-              {loginError && (
-                <div className="rounded-2xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">
-                  {loginError}
-                </div>
-              )}
-
-              <Button type="submit" className="w-full rounded-2xl bg-[#7c4a2d] text-[#fffaf5] shadow-[0_18px_25px_rgba(124,74,45,0.18)] hover:bg-[#6d3f2a]">
-                Masuk
-              </Button>
-
-              <div className="space-y-3 pt-2">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#8d6d5a]">Demo akun</p>
-                <div className="grid gap-2">
-                  {systemUsers.map((user) => (
-                    <button
-                      key={`${user.role}-${user.username}`}
-                      type="button"
-                      onClick={() => {
-                        setLoginForm({
-                          username: user.username,
-                          password: user.password,
-                          role: user.role,
-                        });
-                        setLoginError("");
-                      }}
-                      className="flex items-center justify-between rounded-2xl border border-[#ebdcc7] bg-[#f8f0e9] px-3 py-2 text-left text-sm text-[#3b2b25] hover:bg-[#f0e3d7]"
-                    >
-                      <span className="font-medium capitalize">{user.role}</span>
-                      <span className="text-[#7d685f]">{user.username}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </form>
-          </div>
+            <Button type="submit" className="w-full rounded-2xl bg-[#7c4a2d] text-[#fffaf5] shadow-[0_18px_25px_rgba(124,74,45,0.18)] hover:bg-[#6d3f2a]">
+              Login
+            </Button>
+          </form>
         </div>
       </div>
     );
@@ -1425,7 +1283,7 @@ export default function App() {
           <div className="flex flex-col gap-3">
             <div className="flex items-center gap-3 rounded-2xl bg-[#fffaf5] px-3 py-3 shadow-[0_10px_20px_rgba(74,49,36,0.05)]">
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#7c4a2d] text-lg font-bold text-[#fffaf5] shadow-[0_12px_20px_rgba(124,74,45,0.18)]">
-                {auth?.role === "admin" ? "A" : auth?.role === "investor" ? "I" : "U"}
+                {auth?.role === "admin" ? "A" : auth?.role === "investor" ? "I" : "K"}
               </div>
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#8d6d5a]">Role</p>
@@ -1494,18 +1352,10 @@ export default function App() {
               </div>
             </div>
 
-            <div className="relative mt-5 flex flex-wrap gap-3">
-              {salesStats.map((stat) => (
-                <div key={stat.label} className={`min-w-[140px] flex-1 rounded-2xl border border-[#eddcc3] p-3 ${stat.accent}`}>
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.18em] opacity-75">{stat.label}</p>
-                  <p className="mt-2 text-lg font-semibold text-[#2b1d18]">{stat.value}</p>
-                </div>
-              ))}
-            </div>
           </header>
 
           <div className="min-h-0 flex-1 p-4 sm:p-5 md:p-6">
-            {activeView === "Kasir" ? (
+            {activeView === "Kasir" || activeView === "Menu" ? (
               <>
                 <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
@@ -1571,7 +1421,7 @@ export default function App() {
           </div>
         </div>
 
-        {activeView === "Kasir" && (
+        {(activeView === "Kasir" || activeView === "Menu") && (
           <aside className="flex w-full flex-col border-t border-[#ead8c1] bg-[#f8f1ea] xl:w-[390px] xl:border-l xl:border-t-0">
             <div className="border-b border-[#ead8c1] bg-[linear-gradient(180deg,#f9f3ee_0%,#f4e9df_100%)] p-4 sm:p-6">
               <div className="flex items-center justify-between gap-3">
@@ -1651,7 +1501,7 @@ export default function App() {
         )}
       </div>
 
-      {activeView === "Kasir" && (
+      {(activeView === "Kasir" || activeView === "Menu") && (
         <>
           <PaymentDialog
             open={paymentDialogOpen}

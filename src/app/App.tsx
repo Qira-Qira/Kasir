@@ -4,6 +4,8 @@ import {
   BriefcaseBusiness,
   ChartNoAxesCombined,
   CircleDollarSign,
+  ChevronLeft,
+  ChevronRight,
   Clock,
   Coffee,
   Cookie,
@@ -34,7 +36,7 @@ import { ScrollArea } from "./components/ui/scroll-area";
 import { Badge } from "./components/ui/badge";
 
 type Role = "admin" | "investor" | "kasir";
-type ViewKey = "Kasir" | "Menu" | "Laporan" | "Stok" | "Dashboard";
+type ViewKey = "Menu" | "Laporan" | "Stok" | "Dashboard" | "Pengaturan";
 
 interface Product {
   id: string;
@@ -42,6 +44,7 @@ interface Product {
   price: number;
   category: string;
   stock: number;
+  createdBy?: "admin" | "system";
 }
 
 interface CartItemType {
@@ -80,18 +83,18 @@ interface UserAccount {
 }
 
 const MOCK_PRODUCTS: Product[] = [
-  { id: "1", name: "Espresso", price: 15000, category: "Minuman", stock: 24 },
-  { id: "2", name: "Cappuccino", price: 25000, category: "Minuman", stock: 18 },
-  { id: "3", name: "Latte", price: 28000, category: "Minuman", stock: 12 },
-  { id: "4", name: "Americano", price: 20000, category: "Minuman", stock: 16 },
-  { id: "5", name: "Croissant", price: 18000, category: "Snack", stock: 9 },
-  { id: "6", name: "Chocolate Cake", price: 35000, category: "Snack", stock: 7 },
-  { id: "7", name: "Blueberry Muffin", price: 22000, category: "Snack", stock: 10 },
-  { id: "8", name: "Green Tea", price: 15000, category: "Minuman", stock: 11 },
-  { id: "9", name: "Iced Tea", price: 12000, category: "Minuman", stock: 14 },
-  { id: "10", name: "Sandwich", price: 30000, category: "Makanan", stock: 8 },
-  { id: "11", name: "Smoothie Bowl", price: 38000, category: "Makanan", stock: 6 },
-  { id: "12", name: "Orange Juice", price: 18000, category: "Minuman", stock: 13 },
+  { id: "1", name: "Espresso", price: 15000, category: "Minuman", stock: 24, createdBy: "admin" },
+  { id: "2", name: "Cappuccino", price: 25000, category: "Minuman", stock: 18, createdBy: "admin" },
+  { id: "3", name: "Latte", price: 28000, category: "Minuman", stock: 12, createdBy: "admin" },
+  { id: "4", name: "Americano", price: 20000, category: "Minuman", stock: 16, createdBy: "admin" },
+  { id: "5", name: "Croissant", price: 18000, category: "Snack", stock: 9, createdBy: "admin" },
+  { id: "6", name: "Chocolate Cake", price: 35000, category: "Snack", stock: 7, createdBy: "admin" },
+  { id: "7", name: "Blueberry Muffin", price: 22000, category: "Snack", stock: 10, createdBy: "admin" },
+  { id: "8", name: "Green Tea", price: 15000, category: "Minuman", stock: 11, createdBy: "admin" },
+  { id: "9", name: "Iced Tea", price: 12000, category: "Minuman", stock: 14, createdBy: "admin" },
+  { id: "10", name: "Sandwich", price: 30000, category: "Makanan", stock: 8, createdBy: "admin" },
+  { id: "11", name: "Smoothie Bowl", price: 38000, category: "Makanan", stock: 6, createdBy: "admin" },
+  { id: "12", name: "Orange Juice", price: 18000, category: "Minuman", stock: 13, createdBy: "admin" },
 ];
 
 const USER_ACCOUNTS: UserAccount[] = [
@@ -121,6 +124,7 @@ const ROLE_CONFIG: Record<
       { key: "Menu", label: "Menu", icon: ListOrdered },
       { key: "Stok", label: "Stok", icon: Package },
       { key: "Laporan", label: "Laporan", icon: BarChart3 },
+      { key: "Pengaturan", label: "Pengaturan", icon: Settings },
     ],
     accent: "bg-[#f4e6d7] text-[#5d4337]",
     badge: "bg-[#7c4a2d] text-white",
@@ -137,7 +141,6 @@ const ROLE_CONFIG: Record<
   kasir: {
     label: "Kasir",
     navItems: [
-      { key: "Kasir", label: "Kasir", icon: LayoutGrid },
       { key: "Menu", label: "Menu", icon: ListOrdered },
       { key: "Laporan", label: "Laporan", icon: BarChart3 },
     ],
@@ -158,7 +161,7 @@ export default function App() {
   const [systemUsers, setSystemUsers] = useState<UserAccount[]>(USER_ACCOUNTS);
   const [loginForm, setLoginForm] = useState({ username: "admin", password: "admin123" });
   const [loginError, setLoginError] = useState("");
-  const [activeView, setActiveView] = useState<ViewKey>("Kasir");
+  const [activeView, setActiveView] = useState<ViewKey>("Menu");
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [cart, setCart] = useState<CartItemType[]>([]);
   const [products, setProducts] = useState<Product[]>(MOCK_PRODUCTS);
@@ -166,7 +169,8 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
   const [newProduct, setNewProduct] = useState({ name: "", price: "", category: "Minuman", stock: "" });
-  const [newUser, setNewUser] = useState({ name: "", username: "", password: "", role: "kasir" as Role });
+  const [newUser, setNewUser] = useState({ username: "", password: "", role: "kasir" as Role });
+  const [productToDeleteId, setProductToDeleteId] = useState<string | null>(null);
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
   const [productDraft, setProductDraft] = useState({ name: "", price: "", category: "Minuman", stock: "" });
   const [editingUserUsername, setEditingUserUsername] = useState<string | null>(null);
@@ -179,6 +183,7 @@ export default function App() {
   const [currentTransaction, setCurrentTransaction] = useState<Transaction | null>(null);
   const [selectedTransactionId, setSelectedTransactionId] = useState<string | null>(null);
   const [reportFilter, setReportFilter] = useState<"all" | "Cash" | "QRIS" | "Debit" | "Transfer">("all");
+  const [settingsPage, setSettingsPage] = useState(1);
 
   const categories = ["Semua", "Minuman", "Makanan", "Snack"] as const;
   const categoryMeta: Record<string, { icon: LucideIcon }> = {
@@ -205,13 +210,23 @@ export default function App() {
   const totalRevenue = transactions.reduce((sum, transaction) => sum + transaction.total, 0);
   const averageBasket = transactions.length > 0 ? totalRevenue / transactions.length : 0;
 
-  const filteredProducts = products.filter((product) => {
+  const accessibleProducts = useMemo(() => {
+    if (!auth) return products;
+
+    if (auth.role === "kasir") {
+      return products.filter((product) => product.createdBy === "admin" || product.createdBy === undefined);
+    }
+
+    return products;
+  }, [auth, products]);
+
+  const filteredProducts = accessibleProducts.filter((product) => {
     const matchesCategory = selectedCategory === "Semua" || product.category === selectedCategory;
     const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesSearch;
   });
 
-  const lowStockProducts = products.filter((product) => product.stock <= 10).slice(0, 3);
+  const lowStockProducts = accessibleProducts.filter((product) => product.stock <= 10).slice(0, 3);
 
   const addToCart = (product: Product) => {
     if (product.stock <= 0) return;
@@ -305,6 +320,7 @@ export default function App() {
         price,
         category: newProduct.category,
         stock,
+        createdBy: "admin",
       },
       ...prev,
     ]);
@@ -315,6 +331,7 @@ export default function App() {
 
   const handleDeleteProduct = (id: string) => {
     setProducts((prev) => prev.filter((product) => product.id !== id));
+    setProductToDeleteId(null);
   };
 
   const handleStartEditProduct = (product: Product) => {
@@ -339,7 +356,7 @@ export default function App() {
     setProducts((prev) =>
       prev.map((product) =>
         product.id === id
-          ? { ...product, name, price, category: productDraft.category, stock }
+          ? { ...product, name, price, category: productDraft.category, stock, createdBy: product.createdBy ?? "admin" }
           : product
       )
     );
@@ -390,13 +407,14 @@ export default function App() {
   const handleAddUser = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    const name = newUser.name.trim();
     const username = newUser.username.trim();
     const password = newUser.password.trim();
 
-    if (!name || !username || !password) {
+    if (!username || !password) {
       return;
     }
+
+    const generatedName = username;
 
     setSystemUsers((prev) => {
       if (prev.some((user) => user.username.toLowerCase() === username.toLowerCase())) {
@@ -406,7 +424,7 @@ export default function App() {
       return [
         ...prev,
         {
-          name,
+          name: generatedName,
           username,
           password,
           role: newUser.role,
@@ -414,7 +432,7 @@ export default function App() {
       ];
     });
 
-    setNewUser({ name: "", username: "", password: "", role: "kasir" });
+    setNewUser({ username: "", password: "", role: "kasir" });
   };
 
   const handleDeleteUser = (username: string) => {
@@ -474,7 +492,7 @@ export default function App() {
 
   const handleLogout = () => {
     setAuth(null);
-    setActiveView("Kasir");
+    setActiveView("Menu");
     setCart([]);
     setCurrentTransaction(null);
     setReceiptDialogOpen(false);
@@ -623,7 +641,7 @@ export default function App() {
   );
 
   const renderMenuView = () => (
-    <div className="space-y-5">
+    <div className="flex min-h-0 flex-col space-y-5 overflow-hidden">
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#8d6d5a]">Menu</p>
@@ -665,7 +683,7 @@ export default function App() {
         </TabsList>
       </Tabs>
 
-      <ScrollArea className="min-h-0 min-w-0 flex-1 h-[260px] sm:h-[320px] xl:h-[calc(100%-240px)]">
+      <ScrollArea className="min-h-0 min-w-0 flex-1 h-[260px] sm:h-[320px] xl:h-[calc(100vh-330px)] overflow-hidden">
         <div className="grid min-w-0 grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 xl:grid-cols-4">
           {filteredProducts.map((product) => (
             <ProductCard
@@ -676,7 +694,10 @@ export default function App() {
               category={product.category}
               stock={product.stock}
               disabled={auth?.role === "investor" || product.stock <= 0}
+              isAdmin={auth?.role === "admin"}
               onAdd={() => addToCart(product)}
+              onEdit={() => handleStartEditProduct(product)}
+              onDelete={() => setProductToDeleteId(product.id)}
             />
           ))}
         </div>
@@ -831,8 +852,178 @@ export default function App() {
     </div>
   );
 
+  const renderSettingsView = () => {
+    const totalPages = Math.max(1, Math.ceil(products.length / 5));
+    const paginatedProducts = products.slice((settingsPage - 1) * 5, settingsPage * 5);
+
+    return (
+      <div className="space-y-5">
+        <div className="rounded-[24px] border border-[#eddcc3] bg-[#fffaf5] p-5 shadow-[0_12px_24px_rgba(88,63,46,0.04)]">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="rounded-full bg-[#f3e9dc] p-2 text-[#5d4235]">
+                <Settings className="h-4 w-4" />
+              </div>
+              <h3 className="text-lg font-semibold text-[#2b1d18]">Kelola Menu</h3>
+            </div>
+            <span className="rounded-full bg-[#edf3ef] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#2d5b45]">
+              {products.length} item
+            </span>
+          </div>
+
+          <form onSubmit={handleAddProduct} className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+            <Input
+              value={newProduct.name}
+              onChange={(event) => setNewProduct((prev) => ({ ...prev, name: event.target.value }))}
+              placeholder="Nama produk"
+              className="h-11 rounded-2xl border-[#ebdcc7] bg-[#f9f2ea] text-[#2b1d18]"
+            />
+            <Input
+              type="number"
+              value={newProduct.price}
+              onChange={(event) => setNewProduct((prev) => ({ ...prev, price: event.target.value }))}
+              placeholder="Harga"
+              className="h-11 rounded-2xl border-[#ebdcc7] bg-[#f9f2ea] text-[#2b1d18]"
+            />
+            <select
+              value={newProduct.category}
+              onChange={(event) => setNewProduct((prev) => ({ ...prev, category: event.target.value }))}
+              className="h-11 rounded-2xl border border-[#ebdcc7] bg-[#f9f2ea] px-3 text-[#2b1d18] outline-none"
+            >
+              {categories.filter((item) => item !== "Semua").map((category) => (
+                <option key={category} value={category}>{category}</option>
+              ))}
+            </select>
+            <Input
+              type="number"
+              value={newProduct.stock}
+              onChange={(event) => setNewProduct((prev) => ({ ...prev, stock: event.target.value }))}
+              placeholder="Stok"
+              className="h-11 rounded-2xl border-[#ebdcc7] bg-[#f9f2ea] text-[#2b1d18]"
+            />
+            <Button type="submit" className="h-11 rounded-2xl bg-[#7c4a2d] text-[#fffaf5] hover:bg-[#6d3f2a]">
+              Tambah
+            </Button>
+          </form>
+
+          <div className="mt-5 space-y-3">
+            {paginatedProducts.map((product) => (
+              <div key={product.id} className="rounded-2xl bg-[#f8f0e7] p-3">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="font-medium text-[#2b1d18]">{product.name}</p>
+                    <p className="text-xs text-[#7d685f]">{product.category} • {product.stock} pcs</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold text-[#2b1d18]">{formatCurrency(product.price)}</span>
+                    <button
+                      type="button"
+                      onClick={() => handleStartEditProduct(product)}
+                      className="rounded-full bg-[#edf3ef] px-2 py-1 text-xs font-semibold text-[#2d5b45]"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setProductToDeleteId(product.id)}
+                      className="rounded-full bg-[#f8d7d7] px-2 py-1 text-xs font-semibold text-[#9b3b34]"
+                    >
+                      Hapus
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {products.length > 5 && (
+            <div className="mt-5 flex items-center justify-between rounded-2xl bg-[#f8f0e7] p-3">
+              <button
+                type="button"
+                onClick={() => setSettingsPage((page) => Math.max(1, page - 1))}
+                disabled={settingsPage === 1}
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-[#f3e7d9] text-[#5d4235] disabled:cursor-not-allowed disabled:opacity-50"
+                aria-label="Halaman sebelumnya"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              <span className="text-sm font-medium text-[#4d382f]">Halaman {settingsPage} / {totalPages}</span>
+              <button
+                type="button"
+                onClick={() => setSettingsPage((page) => Math.min(totalPages, page + 1))}
+                disabled={settingsPage === totalPages}
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-[#7c4a2d] text-[#fffaf5] disabled:cursor-not-allowed disabled:opacity-50"
+                aria-label="Halaman berikutnya"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+          )}
+        </div>
+
+        <div className="rounded-[24px] border border-[#eddcc3] bg-[#fffaf5] p-5 shadow-[0_12px_24px_rgba(88,63,46,0.04)]">
+          <div className="flex items-center gap-3">
+            <div className="rounded-full bg-[#f3e9dc] p-2 text-[#5d4235]">
+              <Users className="h-4 w-4" />
+            </div>
+            <h3 className="text-lg font-semibold text-[#2b1d18]">Buat Akun Kasir & Investor</h3>
+          </div>
+
+          <form onSubmit={handleAddUser} className="mt-5 grid gap-3 md:grid-cols-3 xl:grid-cols-4">
+            <Input
+              value={newUser.username}
+              onChange={(event) => setNewUser((prev) => ({ ...prev, username: event.target.value }))}
+              placeholder="Username"
+              className="h-11 rounded-2xl border-[#ebdcc7] bg-[#f9f2ea] text-[#2b1d18]"
+            />
+            <Input
+              type="password"
+              value={newUser.password}
+              onChange={(event) => setNewUser((prev) => ({ ...prev, password: event.target.value }))}
+              placeholder="Password"
+              className="h-11 rounded-2xl border-[#ebdcc7] bg-[#f9f2ea] text-[#2b1d18]"
+            />
+            <select
+              value={newUser.role}
+              onChange={(event) => setNewUser((prev) => ({ ...prev, role: event.target.value as Role }))}
+              className="h-11 rounded-2xl border border-[#ebdcc7] bg-[#f9f2ea] px-3 text-[#2b1d18] outline-none"
+            >
+              <option value="kasir">Kasir</option>
+              <option value="investor">Investor</option>
+            </select>
+            <Button type="submit" className="h-11 rounded-2xl bg-[#7c4a2d] text-[#fffaf5] hover:bg-[#6d3f2a]">
+              Tambah Akun
+            </Button>
+          </form>
+
+          <div className="mt-5 space-y-3">
+            {systemUsers
+              .filter((user) => user.role !== "admin")
+              .map((user) => (
+                <div key={`${user.role}-${user.username}`} className="rounded-2xl bg-[#f8f0e7] p-3">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p className="font-medium text-[#2b1d18]">{user.name}</p>
+                      <p className="text-xs text-[#7d685f]">{user.username} • {user.role}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteUser(user.username)}
+                      className="rounded-full bg-[#f8d7d7] px-2 py-1 text-xs font-semibold text-[#9b3b34]"
+                    >
+                      Hapus
+                    </button>
+                  </div>
+                </div>
+              ))}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderStockView = () => (
-    <div className="space-y-5">
+    <div className="flex min-h-0 flex-col space-y-5 overflow-hidden">
       <div className="grid gap-4 md:grid-cols-3">
         <div className="rounded-[24px] border border-[#eddcc3] bg-[#fffaf5] p-4 shadow-[0_12px_24px_rgba(88,63,46,0.04)]">
           <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#8d6d5a]">Total Item</p>
@@ -859,9 +1050,10 @@ export default function App() {
           <Badge className="rounded-full bg-[#edf3ef] text-[#2d5b45]">{products.filter((product) => product.stock <= 10).length} needs attention</Badge>
         </div>
 
-        <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {products.map((product) => (
-            <div key={product.id} className="rounded-2xl bg-[#f8f0e7] p-3">
+        <ScrollArea className="mt-5 h-[340px] w-full min-w-0 overflow-hidden">
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            {products.map((product) => (
+              <div key={product.id} className="rounded-2xl bg-[#f8f0e7] p-3">
               <div className="flex items-center justify-between">
                 <span className="font-medium text-[#2b1d18]">{product.name}</span>
                 <span className={`rounded-full px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] ${product.stock <= 10 ? "bg-[#f8d7d7] text-[#9b3b34]" : "bg-[#edf3ef] text-[#2d5b45]"}`}>
@@ -889,10 +1081,61 @@ export default function App() {
                   Order
                 </button>
               </div>
-            </div>
-          ))}
-        </div>
+              </div>
+            ))}
+          </div>
+        </ScrollArea>
       </div>
+
+      {productToDeleteId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#2b1d18]/40 p-4">
+          <div className="w-full max-w-md rounded-[28px] border border-[#eddcc3] bg-[#fffaf5] p-5 shadow-[0_40px_80px_rgba(43,29,24,0.18)]">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-[#2b1d18]">Hapus Menu</h3>
+              <button
+                type="button"
+                onClick={() => setProductToDeleteId(null)}
+                className="rounded-full bg-[#f3e7d9] px-2.5 py-1 text-xs font-semibold text-[#5d4235]"
+              >
+                Tutup
+              </button>
+            </div>
+
+            <div className="mt-5 space-y-4">
+              <div className="rounded-2xl bg-[#f8f0e7] p-4">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#8d6d5a]">Menu yang akan dihapus</p>
+                <p className="mt-2 text-lg font-semibold text-[#2b1d18]">
+                  {products.find((product) => product.id === productToDeleteId)?.name || "Produk"}
+                </p>
+                <p className="mt-1 text-sm text-[#7d685f]">
+                  {products.find((product) => product.id === productToDeleteId)?.category || "Kategori"} • {products.find((product) => product.id === productToDeleteId)?.stock || 0} pcs
+                </p>
+              </div>
+
+              <p className="text-sm text-[#5d4235]">
+                Tindakan ini akan menghapus menu dari katalog dan tidak dapat dipilih saat transaksi berikutnya.
+              </p>
+
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setProductToDeleteId(null)}
+                  className="rounded-2xl border border-[#e7d4ba] bg-[#fffaf5] px-4 py-2.5 text-sm font-medium text-[#4d382f]"
+                >
+                  Batal
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleDeleteProduct(productToDeleteId!)}
+                  className="rounded-2xl bg-[#9b3b34] px-4 py-2.5 text-sm font-medium text-white hover:bg-[#842f2a]"
+                >
+                  Hapus Menu
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {restockProductId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#2b1d18]/40 p-4">
@@ -949,143 +1192,12 @@ export default function App() {
       <div className="rounded-[24px] border border-[#eddcc3] bg-[#fffaf5] p-5 shadow-[0_12px_24px_rgba(88,63,46,0.04)] md:col-span-2">
         <div className="flex items-center gap-3">
           <div className="rounded-full bg-[#f3e9dc] p-2 text-[#5d4235]">
-            <ShieldCheck className="h-4 w-4" />
-          </div>
-          <h3 className="text-lg font-semibold text-[#2b1d18]">Kelola Produk</h3>
-        </div>
-
-        <form onSubmit={handleAddProduct} className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
-          <Input
-            value={newProduct.name}
-            onChange={(event) => setNewProduct((prev) => ({ ...prev, name: event.target.value }))}
-            placeholder="Nama produk"
-            className="h-11 rounded-2xl border-[#ebdcc7] bg-[#f9f2ea] text-[#2b1d18]"
-          />
-          <Input
-            type="number"
-            value={newProduct.price}
-            onChange={(event) => setNewProduct((prev) => ({ ...prev, price: event.target.value }))}
-            placeholder="Harga"
-            className="h-11 rounded-2xl border-[#ebdcc7] bg-[#f9f2ea] text-[#2b1d18]"
-          />
-          <select
-            value={newProduct.category}
-            onChange={(event) => setNewProduct((prev) => ({ ...prev, category: event.target.value }))}
-            className="h-11 rounded-2xl border border-[#ebdcc7] bg-[#f9f2ea] px-3 text-[#2b1d18] outline-none"
-          >
-            {categories.filter((item) => item !== "Semua").map((category) => (
-              <option key={category} value={category}>{category}</option>
-            ))}
-          </select>
-          <Input
-            type="number"
-            value={newProduct.stock}
-            onChange={(event) => setNewProduct((prev) => ({ ...prev, stock: event.target.value }))}
-            placeholder="Stok"
-            className="h-11 rounded-2xl border-[#ebdcc7] bg-[#f9f2ea] text-[#2b1d18]"
-          />
-          <Button type="submit" className="h-11 rounded-2xl bg-[#7c4a2d] text-[#fffaf5] hover:bg-[#6d3f2a]">
-            Tambah
-          </Button>
-        </form>
-
-        <div className="mt-5 space-y-3">
-          {products.slice(0, 6).map((product) => {
-            const isEditing = editingProductId === product.id;
-
-            return (
-              <div key={product.id} className="rounded-2xl bg-[#f8f0e7] p-3">
-                {isEditing ? (
-                  <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-5">
-                    <Input
-                      value={productDraft.name}
-                      onChange={(event) => setProductDraft((prev) => ({ ...prev, name: event.target.value }))}
-                      className="h-10 rounded-xl border-[#ebdcc7] bg-[#f9f2ea] text-[#2b1d18]"
-                    />
-                    <Input
-                      type="number"
-                      value={productDraft.price}
-                      onChange={(event) => setProductDraft((prev) => ({ ...prev, price: event.target.value }))}
-                      className="h-10 rounded-xl border-[#ebdcc7] bg-[#f9f2ea] text-[#2b1d18]"
-                    />
-                    <select
-                      value={productDraft.category}
-                      onChange={(event) => setProductDraft((prev) => ({ ...prev, category: event.target.value }))}
-                      className="h-10 rounded-xl border border-[#ebdcc7] bg-[#f9f2ea] px-3 text-[#2b1d18] outline-none"
-                    >
-                      {categories.filter((item) => item !== "Semua").map((category) => (
-                        <option key={category} value={category}>{category}</option>
-                      ))}
-                    </select>
-                    <Input
-                      type="number"
-                      value={productDraft.stock}
-                      onChange={(event) => setProductDraft((prev) => ({ ...prev, stock: event.target.value }))}
-                      className="h-10 rounded-xl border-[#ebdcc7] bg-[#f9f2ea] text-[#2b1d18]"
-                    />
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => handleSaveProductEdit(product.id)}
-                        className="rounded-full bg-[#7c4a2d] px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-white"
-                      >
-                        Simpan
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setEditingProductId(null)}
-                        className="rounded-full bg-[#f3e7d9] px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#5d4235]"
-                      >
-                        Batal
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <p className="font-medium text-[#2b1d18]">{product.name}</p>
-                      <p className="text-xs text-[#7d685f]">{product.category} • {product.stock} pcs</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold text-[#2b1d18]">{formatCurrency(product.price)}</span>
-                      <button
-                        type="button"
-                        onClick={() => handleStartEditProduct(product)}
-                        className="rounded-full bg-[#edf3ef] px-2 py-1 text-xs font-semibold text-[#2d5b45]"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteProduct(product.id)}
-                        className="rounded-full bg-[#f8d7d7] px-2 py-1 text-xs font-semibold text-[#9b3b34]"
-                      >
-                        Hapus
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      <div className="rounded-[24px] border border-[#eddcc3] bg-[#fffaf5] p-5 shadow-[0_12px_24px_rgba(88,63,46,0.04)] md:col-span-2">
-        <div className="flex items-center gap-3">
-          <div className="rounded-full bg-[#f3e9dc] p-2 text-[#5d4235]">
             <Users className="h-4 w-4" />
           </div>
           <h3 className="text-lg font-semibold text-[#2b1d18]">Kelola Kasir</h3>
         </div>
 
-        <form onSubmit={handleAddUser} className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
-          <Input
-            value={newUser.name}
-            onChange={(event) => setNewUser((prev) => ({ ...prev, name: event.target.value }))}
-            placeholder="Nama kasir"
-            className="h-11 rounded-2xl border-[#ebdcc7] bg-[#f9f2ea] text-[#2b1d18]"
-          />
+        <form onSubmit={handleAddUser} className="mt-5 grid gap-3 md:grid-cols-3 xl:grid-cols-4">
           <Input
             value={newUser.username}
             onChange={(event) => setNewUser((prev) => ({ ...prev, username: event.target.value }))}
@@ -1209,9 +1321,10 @@ export default function App() {
         return renderReportView();
       case "Stok":
         return renderStockView();
-      case "Kasir":
+      case "Pengaturan":
+        return renderSettingsView();
       default:
-        return null;
+        return renderMenuView();
     }
   };
 
@@ -1279,6 +1392,7 @@ export default function App() {
   const appPanelClass = isDarkMode ? "border-[#2f3747] bg-[#111827]/95" : "border-[#e9d8c2] bg-[#fffaf5]/95";
   const appSidebarClass = isDarkMode ? "border-[#2f3747] bg-[#111827]" : "border-[#ead8c1] bg-[#f7efe6]";
   const appHeaderClass = isDarkMode ? "border-[#2f3747] bg-[linear-gradient(135deg,#111827_0%,#1f2937_100%)]" : "border-[#eedcc7] bg-[linear-gradient(135deg,#fffaf5_0%,#f8eee4_100%)]";
+  const isCatalogView = activeView === "Menu";
 
   return (
     <div className={`min-h-screen p-3 sm:p-4 md:p-6 ${appShellClass}`}>
@@ -1361,8 +1475,8 @@ export default function App() {
 
           </header>
 
-          <div className="min-h-0 flex-1 p-4 sm:p-5 md:p-6">
-            {activeView === "Kasir" || activeView === "Menu" ? (
+          <div className="min-h-0 flex-1 overflow-hidden p-4 sm:p-5 md:p-6">
+            {isCatalogView ? (
               <>
                 <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center">
                   <div className="relative flex-1">
@@ -1374,53 +1488,86 @@ export default function App() {
                       className="h-12 rounded-2xl border-[#ebdcc7] bg-[#f9f2ea] pl-11 text-[#2b1d18] placeholder:text-[#9a8479] focus:ring-[#c98b5b]"
                     />
                   </div>
-
-                  {auth?.role === "admin" && (
-                    <Button
-                      type="button"
-                      onClick={() => setIsAddMenuOpen((prev) => !prev)}
-                      className="h-12 rounded-2xl bg-[#7c4a2d] px-4 text-sm font-medium text-[#fffaf5] hover:bg-[#6d3f2a]"
-                    >
-                      {isAddMenuOpen ? "Tutup" : "Tambah Menu"}
-                    </Button>
-                  )}
                 </div>
 
                 {auth?.role === "admin" && isAddMenuOpen && (
-                  <form onSubmit={handleAddProduct} className="mb-5 grid gap-3 rounded-[24px] border border-[#eddcc3] bg-[#fffaf5] p-4 shadow-[0_12px_24px_rgba(88,63,46,0.04)] md:grid-cols-2 xl:grid-cols-5">
-                    <Input
-                      value={newProduct.name}
-                      onChange={(event) => setNewProduct((prev) => ({ ...prev, name: event.target.value }))}
-                      placeholder="Nama produk"
-                      className="h-11 rounded-2xl border-[#ebdcc7] bg-[#f9f2ea] text-[#2b1d18]"
-                    />
-                    <Input
-                      type="number"
-                      value={newProduct.price}
-                      onChange={(event) => setNewProduct((prev) => ({ ...prev, price: event.target.value }))}
-                      placeholder="Harga"
-                      className="h-11 rounded-2xl border-[#ebdcc7] bg-[#f9f2ea] text-[#2b1d18]"
-                    />
-                    <select
-                      value={newProduct.category}
-                      onChange={(event) => setNewProduct((prev) => ({ ...prev, category: event.target.value }))}
-                      className="h-11 rounded-2xl border border-[#ebdcc7] bg-[#f9f2ea] px-3 text-[#2b1d18] outline-none"
-                    >
-                      {categories.filter((item) => item !== "Semua").map((category) => (
-                        <option key={category} value={category}>{category}</option>
-                      ))}
-                    </select>
-                    <Input
-                      type="number"
-                      value={newProduct.stock}
-                      onChange={(event) => setNewProduct((prev) => ({ ...prev, stock: event.target.value }))}
-                      placeholder="Stok"
-                      className="h-11 rounded-2xl border-[#ebdcc7] bg-[#f9f2ea] text-[#2b1d18]"
-                    />
-                    <Button type="submit" className="h-11 rounded-2xl bg-[#7c4a2d] text-[#fffaf5] hover:bg-[#6d3f2a]">
-                      Simpan
-                    </Button>
-                  </form>
+                  <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#2b1d18]/40 p-4">
+                    <div className="w-full max-w-2xl rounded-[30px] border border-[#eddcc3] bg-[#fffaf5] p-5 shadow-[0_40px_80px_rgba(43,29,24,0.18)]">
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#8d6d5a]">Admin</p>
+                          <h3 className="mt-1 text-xl font-semibold text-[#2b1d18]">Tambah Menu Baru</h3>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setIsAddMenuOpen(false)}
+                          className="rounded-full bg-[#f3e7d9] px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] text-[#5d4235]"
+                        >
+                          Tutup
+                        </button>
+                      </div>
+
+                      <form onSubmit={handleAddProduct} className="mt-5 grid gap-3 md:grid-cols-2">
+                        <div className="md:col-span-2">
+                          <label className="mb-2 block text-sm font-medium text-[#4d382f]">Nama produk</label>
+                          <Input
+                            value={newProduct.name}
+                            onChange={(event) => setNewProduct((prev) => ({ ...prev, name: event.target.value }))}
+                            placeholder="Contoh: Pisang Nugget"
+                            className="h-11 rounded-2xl border-[#ebdcc7] bg-[#f9f2ea] text-[#2b1d18]"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="mb-2 block text-sm font-medium text-[#4d382f]">Harga</label>
+                          <Input
+                            type="number"
+                            value={newProduct.price}
+                            onChange={(event) => setNewProduct((prev) => ({ ...prev, price: event.target.value }))}
+                            placeholder="15000"
+                            className="h-11 rounded-2xl border-[#ebdcc7] bg-[#f9f2ea] text-[#2b1d18]"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="mb-2 block text-sm font-medium text-[#4d382f]">Stok awal</label>
+                          <Input
+                            type="number"
+                            value={newProduct.stock}
+                            onChange={(event) => setNewProduct((prev) => ({ ...prev, stock: event.target.value }))}
+                            placeholder="20"
+                            className="h-11 rounded-2xl border-[#ebdcc7] bg-[#f9f2ea] text-[#2b1d18]"
+                          />
+                        </div>
+
+                        <div className="md:col-span-2">
+                          <label className="mb-2 block text-sm font-medium text-[#4d382f]">Kategori</label>
+                          <select
+                            value={newProduct.category}
+                            onChange={(event) => setNewProduct((prev) => ({ ...prev, category: event.target.value }))}
+                            className="h-11 w-full rounded-2xl border border-[#ebdcc7] bg-[#f9f2ea] px-3 text-[#2b1d18] outline-none"
+                          >
+                            {categories.filter((item) => item !== "Semua").map((category) => (
+                              <option key={category} value={category}>{category}</option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div className="md:col-span-2 mt-2 flex justify-end gap-3">
+                          <button
+                            type="button"
+                            onClick={() => setIsAddMenuOpen(false)}
+                            className="rounded-2xl border border-[#e7d4ba] bg-[#fffaf5] px-4 py-2.5 text-sm font-medium text-[#4d382f]"
+                          >
+                            Batal
+                          </button>
+                          <Button type="submit" className="rounded-2xl bg-[#7c4a2d] px-4 text-[#fffaf5] hover:bg-[#6d3f2a]">
+                            Simpan Menu
+                          </Button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
                 )}
 
                 <Tabs value={selectedCategory} onValueChange={setSelectedCategory}>
@@ -1466,7 +1613,7 @@ export default function App() {
           </div>
         </div>
 
-        {(activeView === "Kasir" || activeView === "Menu") && (
+        {isCatalogView && (
           <aside className="flex w-full flex-col border-t border-[#ead8c1] bg-[#f8f1ea] xl:w-[390px] xl:border-l xl:border-t-0">
             <div className="border-b border-[#ead8c1] bg-[linear-gradient(180deg,#f9f3ee_0%,#f4e9df_100%)] p-4 sm:p-6">
               <div className="flex items-center justify-between gap-3">
@@ -1546,7 +1693,7 @@ export default function App() {
         )}
       </div>
 
-      {(activeView === "Kasir" || activeView === "Menu") && (
+      {isCatalogView && (
         <>
           <PaymentDialog
             open={paymentDialogOpen}

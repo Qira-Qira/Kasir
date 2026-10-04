@@ -7,10 +7,12 @@ interface ProductCardProps {
   name: string;
   price: number;
   category: string;
+  stock: number;
+  disabled?: boolean;
   onAdd: () => void;
 }
 
-export function ProductCard({ name, price, category, onAdd }: ProductCardProps) {
+export function ProductCard({ name, price, category, stock, disabled = false, onAdd }: ProductCardProps) {
   const categoryColor = {
     Minuman: "bg-[#eaf3ff] text-[#376999]",
     Makanan: "bg-[#fff1d8] text-[#8e5b1f]",
@@ -40,15 +42,20 @@ export function ProductCard({ name, price, category, onAdd }: ProductCardProps) 
           <h3 className="line-clamp-2 text-base font-semibold text-[#2b1d18]">{name}</h3>
         </div>
 
-        <div className="flex items-end justify-between gap-3">
-          <div>
-            <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-[#8a6a52]">Harga</p>
-            <p className="mt-1 text-lg font-semibold text-[#2b1d18]">Rp {price.toLocaleString('id-ID')}</p>
+        <div className="space-y-3">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-[#8a6a52]">Harga</p>
+              <p className="mt-1 text-lg font-semibold text-[#2b1d18]">Rp {price.toLocaleString('id-ID')}</p>
+            </div>
+            <span className={`rounded-full px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] ${stock <= 10 ? "bg-[#f8d7d7] text-[#9b3b34]" : "bg-[#edf3ef] text-[#2d5b45]"}`}>
+              {stock} pcs
+            </span>
           </div>
 
-          <Button size="sm" onClick={onAdd} className="gap-2 rounded-xl bg-[#7c4a2d] px-3 text-sm font-semibold text-[#fffaf5] hover:bg-[#6d3f2a]">
+          <Button size="sm" onClick={onAdd} disabled={disabled} className="w-full gap-2 rounded-xl bg-[#7c4a2d] px-3 text-sm font-semibold text-[#fffaf5] hover:bg-[#6d3f2a] disabled:cursor-not-allowed disabled:bg-[#d8c8b5]">
             <Plus className="h-4 w-4" />
-            Tambah
+            {disabled ? "Tidak Tersedia" : "Tambah"}
           </Button>
         </div>
       </div>

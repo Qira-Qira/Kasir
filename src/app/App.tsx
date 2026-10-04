@@ -63,6 +63,12 @@ export default function App() {
     minute: "2-digit",
   });
 
+  const salesStats = [
+    { label: "Hari Ini", value: "Rp 2.4Jt", accent: "bg-[#f4e6d7] text-[#5d4337]" },
+    { label: "Transaksi", value: "164", accent: "bg-[#edf3ef] text-[#2d5b45]" },
+    { label: "Avg. Order", value: "Rp 14.6K", accent: "bg-[#fbe7df] text-[#8d4c3d]" },
+  ];
+
   const filteredProducts = MOCK_PRODUCTS.filter((product) => {
     const matchesCategory = selectedCategory === "Semua" || product.category === selectedCategory;
     const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase());
@@ -131,31 +137,43 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f5efe8] p-4 md:p-6">
-      <div className="mx-auto flex h-[calc(100vh-2rem)] max-w-[1600px] overflow-hidden rounded-[30px] border border-[#ead8c1] bg-[#fffaf5] shadow-[0_32px_80px_rgba(74,49,36,0.12)]">
-        <div className="flex min-w-0 flex-1 flex-col">
-          <header className="flex items-center justify-between border-b border-[#eedcc7] bg-[#fffaf5] px-6 py-5">
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-[#8d6d5a]">Cafe & Resto</p>
-              <h1 className="mt-1 text-2xl font-semibold text-[#2b1d18]">Moka POS</h1>
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_#f7efe7,_#f0e2d3_38%,_#e8d4b5_100%)] p-3 sm:p-4 md:p-6">
+      <div className="mx-auto flex h-auto w-full max-w-[1600px] min-w-0 flex-col overflow-hidden rounded-[28px] border border-[#e9d8c2] bg-[#fffaf5]/95 shadow-[0_40px_90px_rgba(70,42,28,0.16)] backdrop-blur-sm xl:h-[calc(100vh-2rem)] xl:flex-row">
+        <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+          <header className="relative overflow-hidden border-b border-[#eedcc7] bg-[linear-gradient(135deg,#fffaf5_0%,#f8eee4_100%)] px-4 py-4 sm:px-6 sm:py-5">
+            <div className="absolute inset-y-0 right-0 w-56 bg-[radial-gradient(circle,_rgba(124,74,45,0.10),_transparent_65%)]" />
+            <div className="relative flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-[#8d6d5a]">Cafe & Resto</p>
+                <h1 className="mt-1 text-2xl font-semibold text-[#2b1d18]">Moka POS</h1>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 rounded-full bg-[#f3e6d9] px-3 py-2 text-sm font-medium text-[#534036] shadow-inner shadow-[#f0e2d6]">
+                  <Clock className="h-4 w-4" />
+                  {currentTime}
+                </div>
+              </div>
             </div>
 
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 rounded-full bg-[#f3e6d9] px-3 py-2 text-sm font-medium text-[#534036]">
-                <Clock className="h-4 w-4" />
-                {currentTime}
-              </div>
+            <div className="relative mt-5 grid gap-3 sm:grid-cols-3">
+              {salesStats.map((stat) => (
+                <div key={stat.label} className={`rounded-2xl border border-[#eddcc3] p-3 ${stat.accent}`}>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.18em] opacity-75">{stat.label}</p>
+                  <p className="mt-2 text-lg font-semibold text-[#2b1d18]">{stat.value}</p>
+                </div>
+              ))}
             </div>
           </header>
 
-          <div className="flex-1 p-5 md:p-6">
-            <div className="mb-5 flex items-center justify-between gap-3">
+          <div className="min-h-0 flex-1 p-4 sm:p-5 md:p-6">
+            <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#8d6d5a]">Menu</p>
                 <h2 className="mt-1 text-xl font-semibold text-[#2b1d18]">Pilihan Produk</h2>
               </div>
 
-              <div className="rounded-full bg-[#f4e9dd] px-3 py-1.5 text-sm font-medium text-[#5a453c]">
+              <div className="rounded-full bg-[#f4e9dd] px-3 py-1.5 text-sm font-medium text-[#5a453c] shadow-sm">
                 {filteredProducts.length} item
               </div>
             </div>
@@ -171,17 +189,17 @@ export default function App() {
             </div>
 
             <Tabs value={selectedCategory} onValueChange={setSelectedCategory}>
-              <TabsList className="mb-5 h-auto w-full justify-start rounded-2xl border border-[#ebdcc7] bg-[#f8f0e9] p-1.5">
+              <TabsList className="mb-5 h-auto w-full flex-wrap justify-start rounded-2xl border border-[#ebdcc7] bg-[#f8f0e9] p-1.5">
                 {categories.map((category) => (
-                  <TabsTrigger key={category} value={category} className="flex-1 rounded-xl px-3 py-2 text-sm">
+                  <TabsTrigger key={category} value={category} className="min-w-[90px] flex-1 rounded-xl px-2 py-2 text-xs sm:min-w-[100px] sm:px-3 sm:text-sm">
                     {category}
                   </TabsTrigger>
                 ))}
               </TabsList>
             </Tabs>
 
-            <ScrollArea className="h-[calc(100%-200px)]">
-              <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4">
+            <ScrollArea className="min-h-0 flex-1 h-[260px] sm:h-[320px] xl:h-[calc(100%-240px)]">
+              <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 xl:grid-cols-4">
                 {filteredProducts.map((product) => (
                   <ProductCard
                     key={product.id}
@@ -194,11 +212,11 @@ export default function App() {
           </div>
         </div>
 
-        <aside className="flex w-[390px] flex-col border-l border-[#ead8c1] bg-[#f8f1ea]">
-          <div className="border-b border-[#ead8c1] p-6">
+        <aside className="flex w-full flex-col border-t border-[#ead8c1] bg-[#f8f1ea] xl:w-[390px] xl:border-l xl:border-t-0">
+          <div className="border-b border-[#ead8c1] bg-[linear-gradient(180deg,#f9f3ee_0%,#f4e9df_100%)] p-4 sm:p-6">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#f1e1ce] text-[#5d4235]">
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#f1e1ce] text-[#5d4235] shadow-[0_8px_18px_rgba(124,74,45,0.14)]">
                   <ShoppingCart className="h-5 w-5" />
                 </div>
                 <div>
@@ -208,14 +226,14 @@ export default function App() {
               </div>
 
               {totalItems > 0 && (
-                <Badge variant="secondary" className="rounded-full bg-[#7c4a2d] px-2.5 py-1 text-white">
+                <Badge variant="secondary" className="rounded-full bg-[#7c4a2d] px-2.5 py-1 text-white shadow-[0_10px_18px_rgba(124,74,45,0.18)]">
                   {totalItems}
                 </Badge>
               )}
             </div>
           </div>
 
-          <ScrollArea className="flex-1 p-5">
+          <ScrollArea className="flex-1 p-4 sm:p-5">
             {cart.length === 0 ? (
               <div className="flex h-full min-h-[220px] flex-col items-center justify-center rounded-[24px] border border-dashed border-[#d8c3a5] bg-[#fffaf5] p-6 text-center text-[#7d685f]">
                 <ShoppingCart className="mb-4 h-12 w-12 opacity-50" />
@@ -237,7 +255,7 @@ export default function App() {
             )}
           </ScrollArea>
 
-          <div className="space-y-4 border-t border-[#ead8c1] bg-[#f8f1ea] p-6">
+          <div className="space-y-4 border-t border-[#ead8c1] bg-[#f8f1ea] p-4 sm:p-6">
             {cart.length > 0 && (
               <Button
                 variant="outline"
@@ -249,7 +267,7 @@ export default function App() {
               </Button>
             )}
 
-            <div className="rounded-[22px] bg-[#fffdf9] p-4 shadow-[0_8px_20px_rgba(88,63,46,0.04)]">
+            <div className="rounded-[22px] bg-[#fffdf9] p-4 shadow-[0_12px_24px_rgba(88,63,46,0.05)]">
               <div className="flex items-center justify-between text-sm text-[#7d685f]">
                 <span>Subtotal</span>
                 <span>Rp {totalAmount.toLocaleString('id-ID')}</span>

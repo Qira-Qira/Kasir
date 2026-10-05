@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CreditCard, Banknote, Smartphone } from "lucide-react";
+import { CreditCard, Banknote, Smartphone, UtensilsCrossed, Package } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -16,17 +16,19 @@ interface PaymentDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   total: number;
-  onComplete: (paymentMethod: string, amountPaid: number) => void;
+  onComplete: (paymentMethod: string, amountPaid: number, orderType: "Dine In" | "Takeaway") => void;
 }
 
 export function PaymentDialog({ open, onOpenChange, total, onComplete }: PaymentDialogProps) {
   const [paymentMethod, setPaymentMethod] = useState("cash");
+  const [orderType, setOrderType] = useState("Dine In");
   const [amountPaid, setAmountPaid] = useState("");
 
   const handleComplete = () => {
-    const paid = parseFloat(amountPaid) || total;
-    onComplete(paymentMethod, paid);
+    const paid = paymentMethod === "cash" ? parseFloat(amountPaid) || total : total;
+    onComplete(paymentMethod, paid, orderType as "Dine In" | "Takeaway");
     setAmountPaid("");
+    setOrderType("Dine In");
     onOpenChange(false);
   };
 
@@ -40,6 +42,26 @@ export function PaymentDialog({ open, onOpenChange, total, onComplete }: Payment
         </DialogHeader>
         <div className="space-y-6 py-4">
           <div>
+            <Label>Tipe Pesanan</Label>
+            <RadioGroup value={orderType} onValueChange={setOrderType} className="mt-3 space-y-3">
+              <div className="flex items-center space-x-3 border rounded-lg p-3 hover:bg-accent cursor-pointer">
+                <RadioGroupItem value="Dine In" id="dine-in" />
+                <Label htmlFor="dine-in" className="flex items-center gap-2 cursor-pointer flex-1">
+                  <UtensilsCrossed className="h-5 w-5" />
+                  Dine In
+                </Label>
+              </div>
+              <div className="flex items-center space-x-3 border rounded-lg p-3 hover:bg-accent cursor-pointer">
+                <RadioGroupItem value="Takeaway" id="takeaway" />
+                <Label htmlFor="takeaway" className="flex items-center gap-2 cursor-pointer flex-1">
+                  <Package className="h-5 w-5" />
+                  Takeaway
+                </Label>
+              </div>
+            </RadioGroup>
+          </div>
+
+          <div>
             <Label>Metode Pembayaran</Label>
             <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod} className="mt-3 space-y-3">
               <div className="flex items-center space-x-3 border rounded-lg p-3 hover:bg-accent cursor-pointer">
@@ -50,17 +72,10 @@ export function PaymentDialog({ open, onOpenChange, total, onComplete }: Payment
                 </Label>
               </div>
               <div className="flex items-center space-x-3 border rounded-lg p-3 hover:bg-accent cursor-pointer">
-                <RadioGroupItem value="card" id="card" />
-                <Label htmlFor="card" className="flex items-center gap-2 cursor-pointer flex-1">
-                  <CreditCard className="h-5 w-5" />
-                  Kartu Debit/Kredit
-                </Label>
-              </div>
-              <div className="flex items-center space-x-3 border rounded-lg p-3 hover:bg-accent cursor-pointer">
-                <RadioGroupItem value="ewallet" id="ewallet" />
-                <Label htmlFor="ewallet" className="flex items-center gap-2 cursor-pointer flex-1">
+                <RadioGroupItem value="qris" id="qris" />
+                <Label htmlFor="qris" className="flex items-center gap-2 cursor-pointer flex-1">
                   <Smartphone className="h-5 w-5" />
-                  Dompet Digital
+                  QRIS
                 </Label>
               </div>
             </RadioGroup>
@@ -96,7 +111,7 @@ export function PaymentDialog({ open, onOpenChange, total, onComplete }: Payment
             )}
           </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="print:hidden">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Batal
           </Button>

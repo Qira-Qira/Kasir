@@ -21,6 +21,7 @@ interface ReceiptDialogProps {
   total: number;
   paymentMethod: string;
   amountPaid: number;
+  orderType: "Dine In" | "Takeaway";
   transactionId: string;
   onNewTransaction: () => void;
 }
@@ -32,6 +33,7 @@ export function ReceiptDialog({
   total,
   paymentMethod,
   amountPaid,
+  orderType,
   transactionId,
   onNewTransaction,
 }: ReceiptDialogProps) {
@@ -39,8 +41,7 @@ export function ReceiptDialog({
   const date = new Date().toLocaleString('id-ID');
   const paymentMethodLabel = {
     cash: "Tunai",
-    card: "Kartu Debit/Kredit",
-    ewallet: "Dompet Digital",
+    qris: "QRIS",
   }[paymentMethod] ?? paymentMethod;
 
   const handlePrint = () => {
@@ -69,6 +70,10 @@ export function ReceiptDialog({
               <span>{date}</span>
             </div>
             <div className="flex justify-between">
+              <span className="text-muted-foreground">Tipe Pesanan</span>
+              <span>{orderType}</span>
+            </div>
+            <div className="flex justify-between">
               <span className="text-muted-foreground">Metode Pembayaran</span>
               <span>{paymentMethodLabel}</span>
             </div>
@@ -87,7 +92,11 @@ export function ReceiptDialog({
           <Separator />
 
           <div className="space-y-2">
-            {paymentMethod === "cash" && (
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Total</span>
+              <span>Rp {total.toLocaleString('id-ID')}</span>
+            </div>
+            {paymentMethod === "cash" ? (
               <>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Dibayar</span>
@@ -98,11 +107,16 @@ export function ReceiptDialog({
                   <span>Rp {change.toLocaleString('id-ID')}</span>
                 </div>
               </>
+            ) : (
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Dibayar</span>
+                <span>Rp {total.toLocaleString('id-ID')}</span>
+              </div>
             )}
           </div>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex gap-2 print:hidden">
           <Button variant="outline" className="flex-1 gap-2" onClick={handlePrint}>
             <Printer className="h-4 w-4" />
             Cetak

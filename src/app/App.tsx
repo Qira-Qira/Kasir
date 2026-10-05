@@ -168,9 +168,13 @@ export default function App() {
   const [selectedCategory, setSelectedCategory] = useState("Semua");
   const [searchQuery, setSearchQuery] = useState("");
   const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
+  const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
+  const [menuSearch, setMenuSearch] = useState("");
+  const [userSearch, setUserSearch] = useState("");
   const [newProduct, setNewProduct] = useState({ name: "", price: "", category: "Minuman", stock: "" });
   const [newUser, setNewUser] = useState({ username: "", password: "", role: "kasir" as Role });
   const [productToDeleteId, setProductToDeleteId] = useState<string | null>(null);
+  const [userDeleteUsername, setUserDeleteUsername] = useState<string | null>(null);
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
   const [productDraft, setProductDraft] = useState({ name: "", price: "", category: "Minuman", stock: "" });
   const [editingUserUsername, setEditingUserUsername] = useState<string | null>(null);
@@ -343,6 +347,7 @@ export default function App() {
   const handleDeleteProduct = (id: string) => {
     setProducts((prev) => prev.filter((product) => product.id !== id));
     setProductToDeleteId(null);
+    setEditingProductId((prev) => (prev === id ? null : prev));
   };
 
   const handleStartEditProduct = (product: Product) => {
@@ -353,6 +358,11 @@ export default function App() {
       category: product.category,
       stock: String(product.stock),
     });
+  };
+
+  const handleCloseEditProduct = () => {
+    setEditingProductId(null);
+    setProductDraft({ name: "", price: "", category: "Minuman", stock: "" });
   };
 
   const handleSaveProductEdit = (id: string) => {
@@ -372,8 +382,7 @@ export default function App() {
       )
     );
 
-    setEditingProductId(null);
-    setProductDraft({ name: "", price: "", category: "Minuman", stock: "" });
+    handleCloseEditProduct();
   };
 
   const handleRestockProduct = (id: string, amount = 10) => {
@@ -393,6 +402,11 @@ export default function App() {
     });
   };
 
+  const handleCloseEditUser = () => {
+    setEditingUserUsername(null);
+    setUserDraft({ username: "", password: "", role: "kasir" });
+  };
+
   const handleSaveUserEdit = (currentUsername: string) => {
     const username = userDraft.username.trim();
     const password = userDraft.password.trim();
@@ -409,8 +423,7 @@ export default function App() {
       )
     );
 
-    setEditingUserUsername(null);
-    setUserDraft({ username: "", password: "", role: "kasir" });
+    handleCloseEditUser();
   };
 
   const handleAddUser = (event: React.FormEvent<HTMLFormElement>) => {
@@ -440,12 +453,15 @@ export default function App() {
     });
 
     setNewUser({ username: "", password: "", role: "kasir" });
+    setIsAddUserModalOpen(false);
+    setUserPage(1);
   };
 
   const handleDeleteUser = (username: string) => {
     if (username === "admin") return;
     setSystemUsers((prev) => prev.filter((user) => user.username !== username));
     setEditingUserUsername((prev) => (prev === username ? null : prev));
+    setUserDeleteUsername(null);
   };
 
   const totalAmount = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -864,261 +880,246 @@ export default function App() {
   );
 
   const renderSettingsView = () => {
-    const totalPages = Math.max(1, Math.ceil(products.length / 5));
-    const paginatedProducts = products.slice((settingsPage - 1) * 5, settingsPage * 5);
-    const userTotalPages = Math.max(1, Math.ceil(systemUsers.length / 5));
-    const paginatedUsers = systemUsers.slice((userPage - 1) * 5, userPage * 5);
+    const menuQuery = menuSearch.trim().toLowerCase();
+    const filteredMenuList = products.filter((product) => {
+      if (!menuQuery) return true;
+      return (
+        product.name.toLowerCase().includes(menuQuery) ||
+        product.category.toLowerCase().includes(menuQuery)
+      );
+    });
+
+    const totalPages = Math.max(1, Math.ceil(filteredMenuList.length / 5));
+    const safeSettingsPage = Math.min(settingsPage, totalPages);
+    const paginatedProducts = filteredMenuList.slice((safeSettingsPage - 1) * 5, safeSettingsPage * 5);
+
+    const userQuery = userSearch.trim().toLowerCase();
+    const filteredUsersList = systemUsers.filter((user) => {
+      if (!userQuery) return true;
+      return (
+        user.username.toLowerCase().includes(userQuery) ||
+        user.role.toLowerCase().includes(userQuery) ||
+        user.name.toLowerCase().includes(userQuery)
+      );
+    });
+
+    const userTotalPages = Math.max(1, Math.ceil(filteredUsersList.length / 5));
+    const safeUserPage = Math.min(userPage, userTotalPages);
+    const paginatedUsers = filteredUsersList.slice((safeUserPage - 1) * 5, safeUserPage * 5);
 
     return (
-      <ScrollArea className="min-h-0 flex-1 overflow-y-auto">
-        <div className="flex min-h-0 flex-col space-y-5 pb-2">
-          <div className="rounded-[24px] border border-[#eddcc3] bg-[#fffaf5] p-5 shadow-[0_12px_24px_rgba(88,63,46,0.04)]">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <div className="rounded-full bg-[#f3e9dc] p-2 text-[#5d4235]">
-                <Settings className="h-4 w-4" />
-              </div>
-              <h3 className="text-lg font-semibold text-[#2b1d18]">Kelola Menu</h3>
-            </div>
-            <span className="rounded-full bg-[#edf3ef] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#2d5b45]">
-              {products.length} item
-            </span>
-          </div>
-
-          <form onSubmit={handleAddProduct} className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
-            <Input
-              value={newProduct.name}
-              onChange={(event) => setNewProduct((prev) => ({ ...prev, name: event.target.value }))}
-              placeholder="Nama produk"
-              className="h-11 rounded-2xl border-[#ebdcc7] bg-[#f9f2ea] text-[#2b1d18]"
-            />
-            <Input
-              type="number"
-              value={newProduct.price}
-              onChange={(event) => setNewProduct((prev) => ({ ...prev, price: event.target.value }))}
-              placeholder="Harga"
-              className="h-11 rounded-2xl border-[#ebdcc7] bg-[#f9f2ea] text-[#2b1d18]"
-            />
-            <select
-              value={newProduct.category}
-              onChange={(event) => setNewProduct((prev) => ({ ...prev, category: event.target.value }))}
-              className="h-11 rounded-2xl border border-[#ebdcc7] bg-[#f9f2ea] px-3 text-[#2b1d18] outline-none"
-            >
-              {categories.filter((item) => item !== "Semua").map((category) => (
-                <option key={category} value={category}>{category}</option>
-              ))}
-            </select>
-            <Input
-              type="number"
-              value={newProduct.stock}
-              onChange={(event) => setNewProduct((prev) => ({ ...prev, stock: event.target.value }))}
-              placeholder="Stok"
-              className="h-11 rounded-2xl border-[#ebdcc7] bg-[#f9f2ea] text-[#2b1d18]"
-            />
-            <Button type="submit" className="h-11 rounded-2xl bg-[#7c4a2d] text-[#fffaf5] hover:bg-[#6d3f2a]">
-              Tambah
-            </Button>
-          </form>
-
-          <div className="mt-5 space-y-3">
-            {paginatedProducts.map((product) => (
-              <div key={product.id} className="rounded-2xl bg-[#f8f0e7] p-3">
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <p className="font-medium text-[#2b1d18]">{product.name}</p>
-                    <p className="text-xs text-[#7d685f]">{product.category} • {product.stock} pcs</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-[#2b1d18]">{formatCurrency(product.price)}</span>
-                    <button
-                      type="button"
-                      onClick={() => handleStartEditProduct(product)}
-                      className="rounded-full bg-[#edf3ef] px-2 py-1 text-xs font-semibold text-[#2d5b45]"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setProductToDeleteId(product.id)}
-                      className="rounded-full bg-[#f8d7d7] px-2 py-1 text-xs font-semibold text-[#9b3b34]"
-                    >
-                      Hapus
-                    </button>
-                  </div>
+      <div className="flex h-full min-h-0 flex-col gap-5 overflow-hidden">
+        <div className="grid h-full min-h-0 gap-5 lg:grid-cols-[1.15fr_0.95fr]">
+          <div className="flex min-h-0 flex-col overflow-hidden rounded-[24px] border border-[#eddcc3] bg-[#fffaf5] p-5 shadow-[0_12px_24px_rgba(88,63,46,0.04)]">
+            <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-3">
+                <div className="rounded-full bg-[#f3e9dc] p-2 text-[#5d4235]">
+                  <Settings className="h-4 w-4" />
                 </div>
+                <h3 className="text-lg font-semibold text-[#2b1d18]">Kelola Menu</h3>
               </div>
-            ))}
-          </div>
-
-          {products.length > 5 && (
-            <div className="mt-5 flex items-center justify-between rounded-2xl bg-[#f8f0e7] p-3">
-              <button
-                type="button"
-                onClick={() => setSettingsPage((page) => Math.max(1, page - 1))}
-                disabled={settingsPage === 1}
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-[#f3e7d9] text-[#5d4235] disabled:cursor-not-allowed disabled:opacity-50"
-                aria-label="Halaman sebelumnya"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </button>
-              <span className="text-sm font-medium text-[#4d382f]">Halaman {settingsPage} / {totalPages}</span>
-              <button
-                type="button"
-                onClick={() => setSettingsPage((page) => Math.min(totalPages, page + 1))}
-                disabled={settingsPage === totalPages}
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-[#7c4a2d] text-[#fffaf5] disabled:cursor-not-allowed disabled:opacity-50"
-                aria-label="Halaman berikutnya"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </button>
+              <span className="rounded-full bg-[#edf3ef] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#2d5b45]">
+                {filteredMenuList.length} item
+              </span>
             </div>
-          )}
-        </div>
 
-        <div className="rounded-[24px] border border-[#eddcc3] bg-[#fffaf5] p-5 shadow-[0_12px_24px_rgba(88,63,46,0.04)]">
-          <div className="flex items-center gap-3">
-            <div className="rounded-full bg-[#f3e9dc] p-2 text-[#5d4235]">
-              <Users className="h-4 w-4" />
-            </div>
-            <h3 className="text-lg font-semibold text-[#2b1d18]">Buat Akun</h3>
-          </div>
-
-          <form onSubmit={handleAddUser} className="mt-5 grid gap-3 md:grid-cols-3 xl:grid-cols-4">
-            <Input
-              value={newUser.username}
-              onChange={(event) => setNewUser((prev) => ({ ...prev, username: event.target.value }))}
-              placeholder="Username"
-              className="h-11 rounded-2xl border-[#ebdcc7] bg-[#f9f2ea] text-[#2b1d18]"
-            />
-            <Input
-              type="password"
-              value={newUser.password}
-              onChange={(event) => setNewUser((prev) => ({ ...prev, password: event.target.value }))}
-              placeholder="Password"
-              className="h-11 rounded-2xl border-[#ebdcc7] bg-[#f9f2ea] text-[#2b1d18]"
-            />
-            <select
-              value={newUser.role}
-              onChange={(event) => setNewUser((prev) => ({ ...prev, role: event.target.value as Role }))}
-              className="h-11 rounded-2xl border border-[#ebdcc7] bg-[#f9f2ea] px-3 text-[#2b1d18] outline-none"
-            >
-              <option value="admin">Admin</option>
-              <option value="kasir">Kasir</option>
-              <option value="investor">Investor</option>
-            </select>
-            <Button type="submit" className="h-11 rounded-2xl bg-[#7c4a2d] text-[#fffaf5] hover:bg-[#6d3f2a]">
-              Tambah Akun
-            </Button>
-          </form>
-
-          <div className="mt-5 overflow-hidden rounded-2xl border border-[#ebdcc7] bg-[#f8f0e7]">
-            <ScrollArea className="max-h-[320px] min-h-0 w-full overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="min-w-full text-left text-sm text-[#2b1d18]">
-                  <thead className="bg-[#f1e4d6] text-[#5d4235]">
-                    <tr>
-                      <th className="px-4 py-3 font-semibold">Username</th>
-                      <th className="px-4 py-3 font-semibold">Role</th>
-                      <th className="px-4 py-3 font-semibold">Aksi</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {paginatedUsers.map((user) => {
-                      const isEditing = editingUserUsername === user.username;
-
-                      return (
-                        <tr key={`${user.role}-${user.username}`} className="border-t border-[#ebdcc7]">
-                          <td className="px-4 py-3 font-medium">{user.username}</td>
-                          <td className="px-4 py-3">
-                            {isEditing ? (
-                              <select
-                                value={userDraft.role}
-                                onChange={(event) => setUserDraft((prev) => ({ ...prev, role: event.target.value as Role }))}
-                                className="h-10 rounded-xl border border-[#ebdcc7] bg-[#fffaf5] px-2 text-[#2b1d18] outline-none"
-                              >
-                                <option value="admin">Admin</option>
-                                <option value="kasir">Kasir</option>
-                                <option value="investor">Investor</option>
-                              </select>
-                            ) : (
-                              <span className="rounded-full bg-[#edf3ef] px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#2d5b45]">
-                                {user.role}
-                              </span>
-                            )}
-                          </td>
-                          <td className="px-4 py-3">
-                            {isEditing ? (
-                              <div className="flex gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() => handleSaveUserEdit(user.username)}
-                                  className="rounded-full bg-[#7c4a2d] px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-white"
-                                >
-                                  Simpan
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => setEditingUserUsername(null)}
-                                  className="rounded-full bg-[#f3e7d9] px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#5d4235]"
-                                >
-                                  Batal
-                                </button>
-                              </div>
-                            ) : (
-                              <div className="flex gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() => handleStartEditUser(user)}
-                                  className="rounded-full bg-[#edf3ef] px-2 py-1 text-[10px] font-semibold text-[#2d5b45]"
-                                >
-                                  Edit
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => handleDeleteUser(user.username)}
-                                  disabled={user.username === "admin"}
-                                  className="rounded-full bg-[#f8d7d7] px-2 py-1 text-[10px] font-semibold text-[#9b3b34] disabled:cursor-not-allowed disabled:opacity-50"
-                                >
-                                  Hapus
-                                </button>
-                              </div>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+            <div className="mt-4 flex shrink-0 flex-col gap-3 sm:flex-row sm:items-center">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8a6a52]" />
+                <Input
+                  value={menuSearch}
+                  onChange={(event) => {
+                    setMenuSearch(event.target.value);
+                    setSettingsPage(1);
+                  }}
+                  placeholder="Cari menu..."
+                  className="h-11 rounded-2xl border-[#ebdcc7] bg-[#f9f2ea] pl-10 text-[#2b1d18] placeholder:text-[#9a8479]"
+                />
               </div>
-            </ScrollArea>
+              <Button
+                type="button"
+                onClick={() => setIsAddMenuOpen(true)}
+                className="h-11 rounded-2xl bg-[#7c4a2d] text-[#fffaf5] hover:bg-[#6d3f2a]"
+              >
+                Tambah Menu
+              </Button>
+            </div>
 
-            {systemUsers.length > 5 && (
-              <div className="flex items-center justify-between border-t border-[#ebdcc7] bg-[#f7efe8] p-3">
+            <div className="mt-5 min-h-0 flex-1 overflow-hidden">
+              <div className="h-full space-y-3 overflow-y-auto pr-1">
+                {paginatedProducts.length > 0 ? (
+                  paginatedProducts.map((product) => (
+                    <div key={product.id} className="rounded-2xl bg-[#f8f0e7] p-3">
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                          <p className="font-medium text-[#2b1d18]">{product.name}</p>
+                          <p className="text-xs text-[#7d685f]">{product.category} • {product.stock} pcs</p>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-sm font-semibold text-[#2b1d18]">{formatCurrency(product.price)}</span>
+                          <button
+                            type="button"
+                            onClick={() => handleStartEditProduct(product)}
+                            className="rounded-full bg-[#edf3ef] px-2 py-1 text-xs font-semibold text-[#2d5b45]"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setProductToDeleteId(product.id)}
+                            className="rounded-full bg-[#f8d7d7] px-2 py-1 text-xs font-semibold text-[#9b3b34]"
+                          >
+                            Hapus
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="rounded-2xl bg-[#f8f0e7] p-4 text-sm text-[#7d685f]">Menu tidak ditemukan.</div>
+                )}
+              </div>
+            </div>
+
+            {filteredMenuList.length > 5 && (
+              <div className="mt-5 flex shrink-0 items-center justify-between rounded-2xl bg-[#f8f0e7] p-3">
                 <button
                   type="button"
-                  onClick={() => setUserPage((page) => Math.max(1, page - 1))}
-                  disabled={userPage === 1}
+                  onClick={() => setSettingsPage((page) => Math.max(1, page - 1))}
+                  disabled={safeSettingsPage === 1}
                   className="flex h-9 w-9 items-center justify-center rounded-full bg-[#f3e7d9] text-[#5d4235] disabled:cursor-not-allowed disabled:opacity-50"
-                  aria-label="Halaman pengguna sebelumnya"
+                  aria-label="Halaman sebelumnya"
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </button>
-                <span className="text-sm font-medium text-[#4d382f]">Halaman {userPage} / {userTotalPages}</span>
+                <span className="text-sm font-medium text-[#4d382f]">Halaman {safeSettingsPage} / {totalPages}</span>
                 <button
                   type="button"
-                  onClick={() => setUserPage((page) => Math.min(userTotalPages, page + 1))}
-                  disabled={userPage === userTotalPages}
+                  onClick={() => setSettingsPage((page) => Math.min(totalPages, page + 1))}
+                  disabled={safeSettingsPage === totalPages}
                   className="flex h-9 w-9 items-center justify-center rounded-full bg-[#7c4a2d] text-[#fffaf5] disabled:cursor-not-allowed disabled:opacity-50"
-                  aria-label="Halaman pengguna berikutnya"
+                  aria-label="Halaman berikutnya"
                 >
                   <ChevronRight className="h-4 w-4" />
                 </button>
               </div>
             )}
           </div>
+
+          <div className="flex min-h-0 flex-col overflow-hidden rounded-[24px] border border-[#eddcc3] bg-[#fffaf5] p-5 shadow-[0_12px_24px_rgba(88,63,46,0.04)]">
+            <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-3">
+                <div className="rounded-full bg-[#f3e9dc] p-2 text-[#5d4235]">
+                  <Users className="h-4 w-4" />
+                </div>
+                <h3 className="text-lg font-semibold text-[#2b1d18]">Kelola Akun</h3>
+              </div>
+              <span className="rounded-full bg-[#edf3ef] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#2d5b45]">
+                {filteredUsersList.length} user
+              </span>
+            </div>
+
+            <div className="mt-4 flex shrink-0 flex-col gap-3 sm:flex-row sm:items-center">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8a6a52]" />
+                <Input
+                  value={userSearch}
+                  onChange={(event) => {
+                    setUserSearch(event.target.value);
+                    setUserPage(1);
+                  }}
+                  placeholder="Cari akun..."
+                  className="h-11 rounded-2xl border-[#ebdcc7] bg-[#f9f2ea] pl-10 text-[#2b1d18] placeholder:text-[#9a8479]"
+                />
+              </div>
+              <Button
+                type="button"
+                onClick={() => setIsAddUserModalOpen(true)}
+                className="h-11 rounded-2xl bg-[#7c4a2d] text-[#fffaf5] hover:bg-[#6d3f2a]"
+              >
+                Tambah Akun
+              </Button>
+            </div>
+
+            <div className="mt-5 min-h-0 flex-1 overflow-hidden rounded-2xl border border-[#ebdcc7] bg-[#f8f0e7]">
+              <div className="h-full max-h-[420px] overflow-y-auto overflow-x-auto">
+                <table className="w-full min-w-[420px] table-fixed text-left text-sm text-[#2b1d18]">
+                  <thead className="sticky top-0 z-10 bg-[#f1e4d6] text-[#5d4235]">
+                    <tr>
+                      <th className="w-[38%] px-4 py-3 text-left font-semibold">Username</th>
+                      <th className="w-[30%] px-4 py-3 text-left font-semibold">Role</th>
+                      <th className="w-[32%] px-4 py-3 text-left font-semibold">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {paginatedUsers.length > 0 ? (
+                      paginatedUsers.map((user) => (
+                        <tr key={`${user.role}-${user.username}`} className="border-t border-[#ebdcc7] align-middle">
+                          <td className="px-4 py-3 font-medium align-middle">{user.username}</td>
+                          <td className="px-4 py-3 align-middle">
+                            <span className="inline-flex rounded-full bg-[#edf3ef] px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#2d5b45]">
+                              {user.role}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 align-middle">
+                            <div className="flex flex-wrap gap-2">
+                              <button
+                                type="button"
+                                onClick={() => handleStartEditUser(user)}
+                                className="rounded-full bg-[#edf3ef] px-2 py-1 text-[10px] font-semibold text-[#2d5b45]"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setUserDeleteUsername(user.username)}
+                                disabled={user.username === "admin"}
+                                className="rounded-full bg-[#f8d7d7] px-2 py-1 text-[10px] font-semibold text-[#9b3b34] disabled:cursor-not-allowed disabled:opacity-50"
+                              >
+                                Hapus
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={3} className="px-4 py-4 text-sm text-[#7d685f]">
+                          Akun tidak ditemukan.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {filteredUsersList.length > 5 && (
+                <div className="flex items-center justify-between border-t border-[#ebdcc7] bg-[#f7efe8] p-3">
+                  <button
+                    type="button"
+                    onClick={() => setUserPage((page) => Math.max(1, page - 1))}
+                    disabled={safeUserPage === 1}
+                    className="flex h-9 w-9 items-center justify-center rounded-full bg-[#f3e7d9] text-[#5d4235] disabled:cursor-not-allowed disabled:opacity-50"
+                    aria-label="Halaman pengguna sebelumnya"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </button>
+                  <span className="text-sm font-medium text-[#4d382f]">Halaman {safeUserPage} / {userTotalPages}</span>
+                  <button
+                    type="button"
+                    onClick={() => setUserPage((page) => Math.min(userTotalPages, page + 1))}
+                    disabled={safeUserPage === userTotalPages}
+                    className="flex h-9 w-9 items-center justify-center rounded-full bg-[#7c4a2d] text-[#fffaf5] disabled:cursor-not-allowed disabled:opacity-50"
+                    aria-label="Halaman pengguna berikutnya"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      </ScrollArea>
+      </div>
     );
   };
 
@@ -1186,56 +1187,6 @@ export default function App() {
           </div>
         </ScrollArea>
       </div>
-
-      {productToDeleteId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#2b1d18]/40 p-4">
-          <div className="w-full max-w-md rounded-[28px] border border-[#eddcc3] bg-[#fffaf5] p-5 shadow-[0_40px_80px_rgba(43,29,24,0.18)]">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-[#2b1d18]">Hapus Menu</h3>
-              <button
-                type="button"
-                onClick={() => setProductToDeleteId(null)}
-                className="rounded-full bg-[#f3e7d9] px-2.5 py-1 text-xs font-semibold text-[#5d4235]"
-              >
-                Tutup
-              </button>
-            </div>
-
-            <div className="mt-5 space-y-4">
-              <div className="rounded-2xl bg-[#f8f0e7] p-4">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#8d6d5a]">Menu yang akan dihapus</p>
-                <p className="mt-2 text-lg font-semibold text-[#2b1d18]">
-                  {products.find((product) => product.id === productToDeleteId)?.name || "Produk"}
-                </p>
-                <p className="mt-1 text-sm text-[#7d685f]">
-                  {products.find((product) => product.id === productToDeleteId)?.category || "Kategori"} • {products.find((product) => product.id === productToDeleteId)?.stock || 0} pcs
-                </p>
-              </div>
-
-              <p className="text-sm text-[#5d4235]">
-                Tindakan ini akan menghapus menu dari katalog dan tidak dapat dipilih saat transaksi berikutnya.
-              </p>
-
-              <div className="flex justify-end gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setProductToDeleteId(null)}
-                  className="rounded-2xl border border-[#e7d4ba] bg-[#fffaf5] px-4 py-2.5 text-sm font-medium text-[#4d382f]"
-                >
-                  Batal
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleDeleteProduct(productToDeleteId!)}
-                  className="rounded-2xl bg-[#9b3b34] px-4 py-2.5 text-sm font-medium text-white hover:bg-[#842f2a]"
-                >
-                  Hapus Menu
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {restockProductId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#2b1d18]/40 p-4">
@@ -1473,86 +1424,6 @@ export default function App() {
                   </div>
                 </div>
 
-                {auth?.role === "admin" && isAddMenuOpen && (
-                  <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#2b1d18]/40 p-4">
-                    <div className="w-full max-w-2xl rounded-[30px] border border-[#eddcc3] bg-[#fffaf5] p-5 shadow-[0_40px_80px_rgba(43,29,24,0.18)]">
-                      <div className="flex items-center justify-between gap-3">
-                        <div>
-                          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#8d6d5a]">Admin</p>
-                          <h3 className="mt-1 text-xl font-semibold text-[#2b1d18]">Tambah Menu Baru</h3>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setIsAddMenuOpen(false)}
-                          className="rounded-full bg-[#f3e7d9] px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] text-[#5d4235]"
-                        >
-                          Tutup
-                        </button>
-                      </div>
-
-                      <form onSubmit={handleAddProduct} className="mt-5 grid gap-3 md:grid-cols-2">
-                        <div className="md:col-span-2">
-                          <label className="mb-2 block text-sm font-medium text-[#4d382f]">Nama produk</label>
-                          <Input
-                            value={newProduct.name}
-                            onChange={(event) => setNewProduct((prev) => ({ ...prev, name: event.target.value }))}
-                            placeholder="Contoh: Pisang Nugget"
-                            className="h-11 rounded-2xl border-[#ebdcc7] bg-[#f9f2ea] text-[#2b1d18]"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="mb-2 block text-sm font-medium text-[#4d382f]">Harga</label>
-                          <Input
-                            type="number"
-                            value={newProduct.price}
-                            onChange={(event) => setNewProduct((prev) => ({ ...prev, price: event.target.value }))}
-                            placeholder="15000"
-                            className="h-11 rounded-2xl border-[#ebdcc7] bg-[#f9f2ea] text-[#2b1d18]"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="mb-2 block text-sm font-medium text-[#4d382f]">Stok awal</label>
-                          <Input
-                            type="number"
-                            value={newProduct.stock}
-                            onChange={(event) => setNewProduct((prev) => ({ ...prev, stock: event.target.value }))}
-                            placeholder="20"
-                            className="h-11 rounded-2xl border-[#ebdcc7] bg-[#f9f2ea] text-[#2b1d18]"
-                          />
-                        </div>
-
-                        <div className="md:col-span-2">
-                          <label className="mb-2 block text-sm font-medium text-[#4d382f]">Kategori</label>
-                          <select
-                            value={newProduct.category}
-                            onChange={(event) => setNewProduct((prev) => ({ ...prev, category: event.target.value }))}
-                            className="h-11 w-full rounded-2xl border border-[#ebdcc7] bg-[#f9f2ea] px-3 text-[#2b1d18] outline-none"
-                          >
-                            {categories.filter((item) => item !== "Semua").map((category) => (
-                              <option key={category} value={category}>{category}</option>
-                            ))}
-                          </select>
-                        </div>
-
-                        <div className="md:col-span-2 mt-2 flex justify-end gap-3">
-                          <button
-                            type="button"
-                            onClick={() => setIsAddMenuOpen(false)}
-                            className="rounded-2xl border border-[#e7d4ba] bg-[#fffaf5] px-4 py-2.5 text-sm font-medium text-[#4d382f]"
-                          >
-                            Batal
-                          </button>
-                          <Button type="submit" className="rounded-2xl bg-[#7c4a2d] px-4 text-[#fffaf5] hover:bg-[#6d3f2a]">
-                            Simpan Menu
-                          </Button>
-                        </div>
-                      </form>
-                    </div>
-                  </div>
-                )}
-
                 <Tabs value={selectedCategory} onValueChange={setSelectedCategory}>
                   <TabsList className="mb-5 h-auto w-full flex-wrap justify-start gap-1.5 rounded-2xl border border-[#ebdcc7] bg-[#f8f0e9] p-1.5">
                     {categories.map((category) => {
@@ -1675,6 +1546,418 @@ export default function App() {
           </aside>
         )}
       </div>
+
+      {productToDeleteId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#2b1d18]/40 p-4">
+          <div className="w-full max-w-md rounded-[28px] border border-[#eddcc3] bg-[#fffaf5] p-5 shadow-[0_40px_80px_rgba(43,29,24,0.18)]">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-[#2b1d18]">Hapus Menu</h3>
+              <button
+                type="button"
+                onClick={() => setProductToDeleteId(null)}
+                className="rounded-full bg-[#f3e7d9] px-2.5 py-1 text-xs font-semibold text-[#5d4235]"
+              >
+                Tutup
+              </button>
+            </div>
+
+            <div className="mt-5 space-y-4">
+              <div className="rounded-2xl bg-[#f8f0e7] p-4">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#8d6d5a]">Menu yang akan dihapus</p>
+                <p className="mt-2 text-lg font-semibold text-[#2b1d18]">
+                  {products.find((product) => product.id === productToDeleteId)?.name || "Produk"}
+                </p>
+                <p className="mt-1 text-sm text-[#7d685f]">
+                  {products.find((product) => product.id === productToDeleteId)?.category || "Kategori"} • {products.find((product) => product.id === productToDeleteId)?.stock || 0} pcs
+                </p>
+              </div>
+
+              <p className="text-sm text-[#5d4235]">
+                Tindakan ini akan menghapus menu dari katalog dan tidak dapat dipilih saat transaksi berikutnya.
+              </p>
+
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setProductToDeleteId(null)}
+                  className="rounded-2xl border border-[#e7d4ba] bg-[#fffaf5] px-4 py-2.5 text-sm font-medium text-[#4d382f]"
+                >
+                  Batal
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleDeleteProduct(productToDeleteId!)}
+                  className="rounded-2xl bg-[#9b3b34] px-4 py-2.5 text-sm font-medium text-white hover:bg-[#842f2a]"
+                >
+                  Hapus Menu
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {auth?.role === "admin" && isAddMenuOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#2b1d18]/40 p-4">
+          <div className="w-full max-w-2xl rounded-[30px] border border-[#eddcc3] bg-[#fffaf5] p-5 shadow-[0_40px_80px_rgba(43,29,24,0.18)]">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#8d6d5a]">Admin</p>
+                <h3 className="mt-1 text-xl font-semibold text-[#2b1d18]">Tambah Menu Baru</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsAddMenuOpen(false)}
+                className="rounded-full bg-[#f3e7d9] px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] text-[#5d4235]"
+              >
+                Tutup
+              </button>
+            </div>
+
+            <form onSubmit={handleAddProduct} className="mt-5 grid gap-3 md:grid-cols-2">
+              <div className="md:col-span-2">
+                <label className="mb-2 block text-sm font-medium text-[#4d382f]">Nama produk</label>
+                <Input
+                  value={newProduct.name}
+                  onChange={(event) => setNewProduct((prev) => ({ ...prev, name: event.target.value }))}
+                  placeholder="Contoh: Pisang Nugget"
+                  className="h-11 rounded-2xl border-[#ebdcc7] bg-[#f9f2ea] text-[#2b1d18]"
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium text-[#4d382f]">Harga</label>
+                <Input
+                  type="number"
+                  value={newProduct.price}
+                  onChange={(event) => setNewProduct((prev) => ({ ...prev, price: event.target.value }))}
+                  placeholder="15000"
+                  className="h-11 rounded-2xl border-[#ebdcc7] bg-[#f9f2ea] text-[#2b1d18]"
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium text-[#4d382f]">Stok awal</label>
+                <Input
+                  type="number"
+                  value={newProduct.stock}
+                  onChange={(event) => setNewProduct((prev) => ({ ...prev, stock: event.target.value }))}
+                  placeholder="20"
+                  className="h-11 rounded-2xl border-[#ebdcc7] bg-[#f9f2ea] text-[#2b1d18]"
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="mb-2 block text-sm font-medium text-[#4d382f]">Kategori</label>
+                <select
+                  value={newProduct.category}
+                  onChange={(event) => setNewProduct((prev) => ({ ...prev, category: event.target.value }))}
+                  className="h-11 w-full rounded-2xl border border-[#ebdcc7] bg-[#f9f2ea] px-3 text-[#2b1d18] outline-none"
+                >
+                  {categories.filter((item) => item !== "Semua").map((category) => (
+                    <option key={category} value={category}>{category}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="md:col-span-2 mt-2 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsAddMenuOpen(false)}
+                  className="rounded-2xl border border-[#e7d4ba] bg-[#fffaf5] px-4 py-2.5 text-sm font-medium text-[#4d382f]"
+                >
+                  Batal
+                </button>
+                <Button type="submit" className="rounded-2xl bg-[#7c4a2d] px-4 text-[#fffaf5] hover:bg-[#6d3f2a]">
+                  Simpan Menu
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {editingProductId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#2b1d18]/40 p-4">
+          <div className="w-full max-w-2xl rounded-[30px] border border-[#eddcc3] bg-[#fffaf5] p-5 shadow-[0_40px_80px_rgba(43,29,24,0.18)]">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#8d6d5a]">Admin</p>
+                <h3 className="mt-1 text-xl font-semibold text-[#2b1d18]">Edit Menu</h3>
+              </div>
+              <button
+                type="button"
+                onClick={handleCloseEditProduct}
+                className="rounded-full bg-[#f3e7d9] px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] text-[#5d4235]"
+              >
+                Tutup
+              </button>
+            </div>
+
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                handleSaveProductEdit(editingProductId);
+              }}
+              className="mt-5 grid gap-3 md:grid-cols-2"
+            >
+              <div className="md:col-span-2">
+                <label className="mb-2 block text-sm font-medium text-[#4d382f]">Nama produk</label>
+                <Input
+                  value={productDraft.name}
+                  onChange={(event) => setProductDraft((prev) => ({ ...prev, name: event.target.value }))}
+                  placeholder="Contoh: Pisang Nugget"
+                  className="h-11 rounded-2xl border-[#ebdcc7] bg-[#f9f2ea] text-[#2b1d18]"
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium text-[#4d382f]">Harga</label>
+                <Input
+                  type="number"
+                  value={productDraft.price}
+                  onChange={(event) => setProductDraft((prev) => ({ ...prev, price: event.target.value }))}
+                  placeholder="15000"
+                  className="h-11 rounded-2xl border-[#ebdcc7] bg-[#f9f2ea] text-[#2b1d18]"
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium text-[#4d382f]">Stok</label>
+                <Input
+                  type="number"
+                  value={productDraft.stock}
+                  onChange={(event) => setProductDraft((prev) => ({ ...prev, stock: event.target.value }))}
+                  placeholder="20"
+                  className="h-11 rounded-2xl border-[#ebdcc7] bg-[#f9f2ea] text-[#2b1d18]"
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="mb-2 block text-sm font-medium text-[#4d382f]">Kategori</label>
+                <select
+                  value={productDraft.category}
+                  onChange={(event) => setProductDraft((prev) => ({ ...prev, category: event.target.value }))}
+                  className="h-11 w-full rounded-2xl border border-[#ebdcc7] bg-[#f9f2ea] px-3 text-[#2b1d18] outline-none"
+                >
+                  {categories.filter((item) => item !== "Semua").map((category) => (
+                    <option key={category} value={category}>{category}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="md:col-span-2 mt-2 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={handleCloseEditProduct}
+                  className="rounded-2xl border border-[#e7d4ba] bg-[#fffaf5] px-4 py-2.5 text-sm font-medium text-[#4d382f]"
+                >
+                  Batal
+                </button>
+                <Button type="submit" className="rounded-2xl bg-[#7c4a2d] px-4 text-[#fffaf5] hover:bg-[#6d3f2a]">
+                  Simpan Perubahan
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {isAddUserModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#2b1d18]/40 p-4">
+          <div className="w-full max-w-xl rounded-[30px] border border-[#eddcc3] bg-[#fffaf5] p-5 shadow-[0_40px_80px_rgba(43,29,24,0.18)]">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#8d6d5a]">Admin</p>
+                <h3 className="mt-1 text-xl font-semibold text-[#2b1d18]">Tambah Akun Baru</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsAddUserModalOpen(false)}
+                className="rounded-full bg-[#f3e7d9] px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] text-[#5d4235]"
+              >
+                Tutup
+              </button>
+            </div>
+
+            <form onSubmit={handleAddUser} className="mt-5 space-y-4">
+              <div>
+                <label className="mb-2 block text-sm font-medium text-[#4d382f]">Username</label>
+                <Input
+                  value={newUser.username}
+                  onChange={(event) => setNewUser((prev) => ({ ...prev, username: event.target.value }))}
+                  placeholder="Masukkan username"
+                  className="h-11 rounded-2xl border-[#ebdcc7] bg-[#f9f2ea] text-[#2b1d18]"
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium text-[#4d382f]">Password</label>
+                <Input
+                  type="password"
+                  value={newUser.password}
+                  onChange={(event) => setNewUser((prev) => ({ ...prev, password: event.target.value }))}
+                  placeholder="Masukkan password"
+                  className="h-11 rounded-2xl border-[#ebdcc7] bg-[#f9f2ea] text-[#2b1d18]"
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium text-[#4d382f]">Role</label>
+                <select
+                  value={newUser.role}
+                  onChange={(event) => setNewUser((prev) => ({ ...prev, role: event.target.value as Role }))}
+                  className="h-11 w-full rounded-2xl border border-[#ebdcc7] bg-[#f9f2ea] px-3 text-[#2b1d18] outline-none"
+                >
+                  <option value="admin">Admin</option>
+                  <option value="kasir">Kasir</option>
+                  <option value="investor">Investor</option>
+                </select>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsAddUserModalOpen(false)}
+                  className="rounded-2xl border border-[#e7d4ba] bg-[#fffaf5] px-4 py-2.5 text-sm font-medium text-[#4d382f]"
+                >
+                  Batal
+                </button>
+                <Button type="submit" className="rounded-2xl bg-[#7c4a2d] px-4 text-[#fffaf5] hover:bg-[#6d3f2a]">
+                  Simpan Akun
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {editingUserUsername && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#2b1d18]/40 p-4">
+          <div className="w-full max-w-xl rounded-[30px] border border-[#eddcc3] bg-[#fffaf5] p-5 shadow-[0_40px_80px_rgba(43,29,24,0.18)]">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#8d6d5a]">Admin</p>
+                <h3 className="mt-1 text-xl font-semibold text-[#2b1d18]">Edit Akun</h3>
+              </div>
+              <button
+                type="button"
+                onClick={handleCloseEditUser}
+                className="rounded-full bg-[#f3e7d9] px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] text-[#5d4235]"
+              >
+                Tutup
+              </button>
+            </div>
+
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                handleSaveUserEdit(editingUserUsername);
+              }}
+              className="mt-5 space-y-4"
+            >
+              <div>
+                <label className="mb-2 block text-sm font-medium text-[#4d382f]">Username</label>
+                <Input
+                  value={userDraft.username}
+                  onChange={(event) => setUserDraft((prev) => ({ ...prev, username: event.target.value }))}
+                  placeholder="Masukkan username"
+                  className="h-11 rounded-2xl border-[#ebdcc7] bg-[#f9f2ea] text-[#2b1d18]"
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium text-[#4d382f]">Password</label>
+                <Input
+                  type="password"
+                  value={userDraft.password}
+                  onChange={(event) => setUserDraft((prev) => ({ ...prev, password: event.target.value }))}
+                  placeholder="Masukkan password"
+                  className="h-11 rounded-2xl border-[#ebdcc7] bg-[#f9f2ea] text-[#2b1d18]"
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium text-[#4d382f]">Role</label>
+                <select
+                  value={userDraft.role}
+                  onChange={(event) => setUserDraft((prev) => ({ ...prev, role: event.target.value as Role }))}
+                  className="h-11 w-full rounded-2xl border border-[#ebdcc7] bg-[#f9f2ea] px-3 text-[#2b1d18] outline-none"
+                >
+                  <option value="admin">Admin</option>
+                  <option value="kasir">Kasir</option>
+                  <option value="investor">Investor</option>
+                </select>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={handleCloseEditUser}
+                  className="rounded-2xl border border-[#e7d4ba] bg-[#fffaf5] px-4 py-2.5 text-sm font-medium text-[#4d382f]"
+                >
+                  Batal
+                </button>
+                <Button type="submit" className="rounded-2xl bg-[#7c4a2d] px-4 text-[#fffaf5] hover:bg-[#6d3f2a]">
+                  Simpan Perubahan
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {userDeleteUsername && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#2b1d18]/40 p-4">
+          <div className="w-full max-w-md rounded-[28px] border border-[#eddcc3] bg-[#fffaf5] p-5 shadow-[0_40px_80px_rgba(43,29,24,0.18)]">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-[#2b1d18]">Hapus Akun</h3>
+              <button
+                type="button"
+                onClick={() => setUserDeleteUsername(null)}
+                className="rounded-full bg-[#f3e7d9] px-2.5 py-1 text-xs font-semibold text-[#5d4235]"
+              >
+                Tutup
+              </button>
+            </div>
+
+            <div className="mt-5 space-y-4">
+              <div className="rounded-2xl bg-[#f8f0e7] p-4">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#8d6d5a]">Akun yang akan dihapus</p>
+                <p className="mt-2 text-lg font-semibold text-[#2b1d18]">{userDeleteUsername}</p>
+                <p className="mt-1 text-sm text-[#7d685f]">
+                  {systemUsers.find((user) => user.username === userDeleteUsername)?.role || "Role"}
+                </p>
+              </div>
+
+              <p className="text-sm text-[#5d4235]">
+                Tindakan ini akan menghapus akun dari sistem dan semua akses login terkait akan hilang.
+              </p>
+
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setUserDeleteUsername(null)}
+                  className="rounded-2xl border border-[#e7d4ba] bg-[#fffaf5] px-4 py-2.5 text-sm font-medium text-[#4d382f]"
+                >
+                  Batal
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (userDeleteUsername) {
+                      handleDeleteUser(userDeleteUsername);
+                    }
+                  }}
+                  className="rounded-2xl bg-[#9b3b34] px-4 py-2.5 text-sm font-medium text-white hover:bg-[#842f2a]"
+                >
+                  Hapus Akun
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {isCatalogView && (
         <>

@@ -1,18 +1,26 @@
 import { BarChart3, ChartNoAxesCombined, CircleDollarSign, Clock, ShoppingCart, TrendingUp, ShieldCheck } from "lucide-react";
 
-export function ReportView() {
+interface ReportViewProps {
+  report?: {
+    kpiCards?: Array<{ label: string; value: string; change: string }>; 
+    bestSellerMenu?: Array<{ name: string; qty: number; revenue: string }>;
+    fetchedAt?: string;
+  };
+}
+
+export function ReportView({ report }: ReportViewProps) {
   const rangeOptions = ["Hari Ini", "7 Hari Terakhir", "Bulanan", "Custom Date"] as const;
   const shiftOptions = ["Semua Shift", "Shift 1", "Shift 2"] as const;
   const branchOptions = ["Semua Cabang", "Cabang Utama", "Cabang 2"] as const;
 
-  const kpiCards = [
+  const kpiCards = report?.kpiCards ?? [
     { label: "Gross Sales", value: "Rp 42.500.000", change: "+12.4%", color: "text-[#2d5b45]" },
     { label: "Net Sales", value: "Rp 38.620.000", change: "+9.8%", color: "text-[#2d5b45]" },
     { label: "Total Transaksi", value: "1.248", change: "+6.3%", color: "text-[#2d5b45]" },
     { label: "AOV", value: "Rp 34.000", change: "+4.1%", color: "text-[#2d5b45]" },
   ];
 
-  const bestSellerMenu = [
+  const bestSellerMenu = report?.bestSellerMenu ?? [
     { name: "Cappuccino", qty: 142, revenue: "Rp 3.550.000" },
     { name: "Latte", qty: 126, revenue: "Rp 3.150.000" },
     { name: "Croissant", qty: 118, revenue: "Rp 2.120.000" },

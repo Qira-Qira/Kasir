@@ -9,16 +9,19 @@ import { RestockDialog } from "./components/features/RestockDialog";
 import { UserFormModal } from "./components/features/UserFormModal";
 import { AppShell } from "./components/layout/AppShell";
 import { CartSidebar } from "./components/layout/CartSidebar";
+import { ProductPageSkeleton, ReportPageSkeleton } from "./components/ui/PageSkeleton";
 import { PaymentDialog } from "./components/ui/PaymentDialog";
 import { ReceiptDialog } from "./components/ui/ReceiptDialog";
 import { ROLE_CONFIG } from "./constants";
 import { usePosApp } from "./hooks/usePosApp";
+import { getServerSideProps } from "./server/getServerSideProps";
 import { formatCurrency } from "./utils";
 import { DashboardView } from "./views/DashboardView";
 import { MenuView } from "./views/MenuView";
 import { ReportView } from "./views/ReportView";
 import { SettingsView } from "./views/SettingsView";
 import { StockView } from "./views/StockView";
+import { useEffect, useState } from "react";
 
 export default function App() {
   const appState = usePosApp();
@@ -106,10 +109,71 @@ export default function App() {
     setStockPage,
     setSettingsPage,
     setUserDeleteUsername,
+    setProducts,
   } = appState;
+
+  const [serverPageStatus, setServerPageStatus] = useState({ menu: false, report: false });
+  const [pageLoading, setPageLoading] = useState(false);
+  const [serverReport, setServerReport] = useState<
+    | {
+        kpiCards?: Array<{ label: string; value: string; change: string }>;
+        bestSellerMenu?: Array<{ name: string; qty: number; revenue: string }>;
+        fetchedAt?: string;
+      }
+    | null
+  >(null);
+
+  useEffect(() => {
+    if (!auth) return;
+
+    if (activeView === "Menu" && !serverPageStatus.menu) {
+      let cancelled = false;
+      setPageLoading(true);
+
+      const loadMenuPage = async () => {
+        const result = await getServerSideProps("products");
+        if (cancelled) return;
+
+        const serverProducts = result?.props?.products ?? products;
+        setProducts(serverProducts);
+        setServerPageStatus((prev) => ({ ...prev, menu: true }));
+        setPageLoading(false);
+      };
+
+      void loadMenuPage();
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    if (activeView === "Laporan" && !serverPageStatus.report) {
+      let cancelled = false;
+      setPageLoading(true);
+
+      const loadReportPage = async () => {
+        const result = await getServerSideProps("report");
+        if (cancelled) return;
+
+        setServerReport(result?.props?.report ?? null);
+        setServerPageStatus((prev) => ({ ...prev, report: true }));
+        setPageLoading(false);
+      };
+
+      void loadReportPage();
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    setPageLoading(false);
+  }, [activeView, auth, products, serverPageStatus.menu, serverPageStatus.report, setProducts]);
 
   const renderContent = () => {
     if (!auth) return null;
+
+    if (pageLoading && (activeView === "Menu" || activeView === "Laporan")) {
+      return activeView === "Menu" ? <ProductPageSkeleton /> : <ReportPageSkeleton />;
+    }
 
     switch (activeView) {
       case "Dashboard":
@@ -129,7 +193,7 @@ export default function App() {
           />
         );
       case "Laporan":
-        return <ReportView />;
+        return <ReportView report={serverReport ?? undefined} />;
       case "Stok":
         return (
           <StockView

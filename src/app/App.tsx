@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   BarChart3,
   BriefcaseBusiness,
@@ -174,7 +174,8 @@ export default function App() {
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
   const [productDraft, setProductDraft] = useState({ name: "", price: "", category: "Minuman", stock: "" });
   const [editingUserUsername, setEditingUserUsername] = useState<string | null>(null);
-  const [userDraft, setUserDraft] = useState({ name: "", username: "", password: "", role: "kasir" as Role });
+  const [userDraft, setUserDraft] = useState({ username: "", password: "", role: "kasir" as Role });
+  const [userPage, setUserPage] = useState(1);
   const [restockProductId, setRestockProductId] = useState<string | null>(null);
   const [restockQty, setRestockQty] = useState("10");
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
@@ -199,6 +200,16 @@ export default function App() {
 
   const roleConfig = auth ? ROLE_CONFIG[auth.role] : ROLE_CONFIG.admin;
   const visibleNavItems = useMemo(() => roleConfig.navItems, [roleConfig]);
+
+  useEffect(() => {
+    const maxProductPages = Math.max(1, Math.ceil(products.length / 5));
+    setSettingsPage((page) => Math.min(page, maxProductPages));
+  }, [products.length]);
+
+  useEffect(() => {
+    const maxUserPages = Math.max(1, Math.ceil(systemUsers.length / 5));
+    setUserPage((page) => Math.min(page, maxUserPages));
+  }, [systemUsers.length]);
 
   const recentTransactions = transactions.slice(0, 3);
   const filteredTransactions =
@@ -376,7 +387,6 @@ export default function App() {
   const handleStartEditUser = (user: UserAccount) => {
     setEditingUserUsername(user.username);
     setUserDraft({
-      name: user.name,
       username: user.username,
       password: user.password,
       role: user.role,
@@ -384,24 +394,23 @@ export default function App() {
   };
 
   const handleSaveUserEdit = (currentUsername: string) => {
-    const name = userDraft.name.trim();
     const username = userDraft.username.trim();
     const password = userDraft.password.trim();
 
-    if (!name || !username || !password) {
+    if (!username || !password) {
       return;
     }
 
     setSystemUsers((prev) =>
       prev.map((user) =>
         user.username === currentUsername
-          ? { ...user, name, username, password, role: userDraft.role }
+          ? { ...user, name: username, username, password, role: userDraft.role }
           : user
       )
     );
 
     setEditingUserUsername(null);
-    setUserDraft({ name: "", username: "", password: "", role: "kasir" });
+    setUserDraft({ username: "", password: "", role: "kasir" });
   };
 
   const handleAddUser = (event: React.FormEvent<HTMLFormElement>) => {
@@ -414,8 +423,6 @@ export default function App() {
       return;
     }
 
-    const generatedName = username;
-
     setSystemUsers((prev) => {
       if (prev.some((user) => user.username.toLowerCase() === username.toLowerCase())) {
         return prev;
@@ -424,7 +431,7 @@ export default function App() {
       return [
         ...prev,
         {
-          name: generatedName,
+          name: username,
           username,
           password,
           role: newUser.role,
@@ -436,7 +443,9 @@ export default function App() {
   };
 
   const handleDeleteUser = (username: string) => {
+    if (username === "admin") return;
     setSystemUsers((prev) => prev.filter((user) => user.username !== username));
+    setEditingUserUsername((prev) => (prev === username ? null : prev));
   };
 
   const totalAmount = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -683,7 +692,7 @@ export default function App() {
         </TabsList>
       </Tabs>
 
-      <ScrollArea className="min-h-0 min-w-0 flex-1 h-[260px] sm:h-[320px] xl:h-[calc(100vh-330px)] overflow-hidden">
+      <ScrollArea className="min-h-0 min-w-0 flex-1 h-[260px] sm:h-[320px] xl:h-[calc(100vh-330px)] overflow-y-auto">
         <div className="grid min-w-0 grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 xl:grid-cols-4">
           {filteredProducts.map((product) => (
             <ProductCard
@@ -706,7 +715,7 @@ export default function App() {
   );
 
   const renderReportView = () => (
-    <div className="space-y-5">
+    <div className="flex min-h-0 flex-col space-y-5 overflow-y-auto">
       <div className="grid gap-4 md:grid-cols-3">
         <div className="rounded-[24px] border border-[#eddcc3] bg-[#fffaf5] p-4 shadow-[0_12px_24px_rgba(88,63,46,0.04)]">
           <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#8d6d5a]">Pendapatan</p>
@@ -792,30 +801,32 @@ export default function App() {
           </div>
         </div>
 
-        <div className="mt-5 grid gap-3 lg:grid-cols-[1.2fr_0.8fr]">
-          <div className="space-y-3">
-            {filteredTransactions.length > 0 ? (
-              filteredTransactions.map((transaction) => (
-                <button
-                  key={transaction.id}
-                  type="button"
-                  onClick={() => setSelectedTransactionId(transaction.id)}
-                  className={`flex w-full flex-col gap-2 rounded-2xl bg-[#f8f0e7] p-3 text-left sm:flex-row sm:items-center sm:justify-between ${selectedTransaction?.id === transaction.id ? "ring-2 ring-[#7c4a2d]" : ""}`}
-                >
-                  <div>
-                    <p className="font-medium text-[#2b1d18]">{transaction.id}</p>
-                    <p className="text-xs text-[#7d685f]">{transaction.paymentMethod}</p>
-                  </div>
-                  <div className="text-left sm:text-right">
-                    <p className="font-semibold text-[#2b1d18]">{formatCurrency(transaction.total)}</p>
-                    <p className="text-xs text-[#7d685f]">{new Date(transaction.date).toLocaleDateString("id-ID")}</p>
-                  </div>
-                </button>
-              ))
-            ) : (
-              <div className="rounded-2xl bg-[#f8f0e7] p-4 text-sm text-[#7d685f]">Belum ada transaksi dengan filter ini.</div>
-            )}
-          </div>
+        <div className="mt-5 grid min-h-0 gap-3 lg:grid-cols-[1.2fr_0.8fr]">
+          <ScrollArea className="h-[300px] min-h-0 w-full overflow-y-auto">
+            <div className="space-y-3 pr-2">
+              {filteredTransactions.length > 0 ? (
+                filteredTransactions.map((transaction) => (
+                  <button
+                    key={transaction.id}
+                    type="button"
+                    onClick={() => setSelectedTransactionId(transaction.id)}
+                    className={`flex w-full flex-col gap-2 rounded-2xl bg-[#f8f0e7] p-3 text-left sm:flex-row sm:items-center sm:justify-between ${selectedTransaction?.id === transaction.id ? "ring-2 ring-[#7c4a2d]" : ""}`}
+                  >
+                    <div>
+                      <p className="font-medium text-[#2b1d18]">{transaction.id}</p>
+                      <p className="text-xs text-[#7d685f]">{transaction.paymentMethod}</p>
+                    </div>
+                    <div className="text-left sm:text-right">
+                      <p className="font-semibold text-[#2b1d18]">{formatCurrency(transaction.total)}</p>
+                      <p className="text-xs text-[#7d685f]">{new Date(transaction.date).toLocaleDateString("id-ID")}</p>
+                    </div>
+                  </button>
+                ))
+              ) : (
+                <div className="rounded-2xl bg-[#f8f0e7] p-4 text-sm text-[#7d685f]">Belum ada transaksi dengan filter ini.</div>
+              )}
+            </div>
+          </ScrollArea>
 
           {selectedTransaction && (
             <div className="rounded-[22px] bg-[#f8f0e7] p-4">
@@ -855,10 +866,13 @@ export default function App() {
   const renderSettingsView = () => {
     const totalPages = Math.max(1, Math.ceil(products.length / 5));
     const paginatedProducts = products.slice((settingsPage - 1) * 5, settingsPage * 5);
+    const userTotalPages = Math.max(1, Math.ceil(systemUsers.length / 5));
+    const paginatedUsers = systemUsers.slice((userPage - 1) * 5, userPage * 5);
 
     return (
-      <div className="space-y-5">
-        <div className="rounded-[24px] border border-[#eddcc3] bg-[#fffaf5] p-5 shadow-[0_12px_24px_rgba(88,63,46,0.04)]">
+      <ScrollArea className="min-h-0 flex-1 overflow-y-auto">
+        <div className="flex min-h-0 flex-col space-y-5 pb-2">
+          <div className="rounded-[24px] border border-[#eddcc3] bg-[#fffaf5] p-5 shadow-[0_12px_24px_rgba(88,63,46,0.04)]">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <div className="rounded-full bg-[#f3e9dc] p-2 text-[#5d4235]">
@@ -966,7 +980,7 @@ export default function App() {
             <div className="rounded-full bg-[#f3e9dc] p-2 text-[#5d4235]">
               <Users className="h-4 w-4" />
             </div>
-            <h3 className="text-lg font-semibold text-[#2b1d18]">Buat Akun Kasir & Investor</h3>
+            <h3 className="text-lg font-semibold text-[#2b1d18]">Buat Akun</h3>
           </div>
 
           <form onSubmit={handleAddUser} className="mt-5 grid gap-3 md:grid-cols-3 xl:grid-cols-4">
@@ -988,6 +1002,7 @@ export default function App() {
               onChange={(event) => setNewUser((prev) => ({ ...prev, role: event.target.value as Role }))}
               className="h-11 rounded-2xl border border-[#ebdcc7] bg-[#f9f2ea] px-3 text-[#2b1d18] outline-none"
             >
+              <option value="admin">Admin</option>
               <option value="kasir">Kasir</option>
               <option value="investor">Investor</option>
             </select>
@@ -996,29 +1011,114 @@ export default function App() {
             </Button>
           </form>
 
-          <div className="mt-5 space-y-3">
-            {systemUsers
-              .filter((user) => user.role !== "admin")
-              .map((user) => (
-                <div key={`${user.role}-${user.username}`} className="rounded-2xl bg-[#f8f0e7] p-3">
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <p className="font-medium text-[#2b1d18]">{user.name}</p>
-                      <p className="text-xs text-[#7d685f]">{user.username} • {user.role}</p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteUser(user.username)}
-                      className="rounded-full bg-[#f8d7d7] px-2 py-1 text-xs font-semibold text-[#9b3b34]"
-                    >
-                      Hapus
-                    </button>
-                  </div>
-                </div>
-              ))}
+          <div className="mt-5 overflow-hidden rounded-2xl border border-[#ebdcc7] bg-[#f8f0e7]">
+            <ScrollArea className="max-h-[320px] min-h-0 w-full overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-left text-sm text-[#2b1d18]">
+                  <thead className="bg-[#f1e4d6] text-[#5d4235]">
+                    <tr>
+                      <th className="px-4 py-3 font-semibold">Username</th>
+                      <th className="px-4 py-3 font-semibold">Role</th>
+                      <th className="px-4 py-3 font-semibold">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {paginatedUsers.map((user) => {
+                      const isEditing = editingUserUsername === user.username;
+
+                      return (
+                        <tr key={`${user.role}-${user.username}`} className="border-t border-[#ebdcc7]">
+                          <td className="px-4 py-3 font-medium">{user.username}</td>
+                          <td className="px-4 py-3">
+                            {isEditing ? (
+                              <select
+                                value={userDraft.role}
+                                onChange={(event) => setUserDraft((prev) => ({ ...prev, role: event.target.value as Role }))}
+                                className="h-10 rounded-xl border border-[#ebdcc7] bg-[#fffaf5] px-2 text-[#2b1d18] outline-none"
+                              >
+                                <option value="admin">Admin</option>
+                                <option value="kasir">Kasir</option>
+                                <option value="investor">Investor</option>
+                              </select>
+                            ) : (
+                              <span className="rounded-full bg-[#edf3ef] px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#2d5b45]">
+                                {user.role}
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3">
+                            {isEditing ? (
+                              <div className="flex gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => handleSaveUserEdit(user.username)}
+                                  className="rounded-full bg-[#7c4a2d] px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-white"
+                                >
+                                  Simpan
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingUserUsername(null)}
+                                  className="rounded-full bg-[#f3e7d9] px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#5d4235]"
+                                >
+                                  Batal
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="flex gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => handleStartEditUser(user)}
+                                  className="rounded-full bg-[#edf3ef] px-2 py-1 text-[10px] font-semibold text-[#2d5b45]"
+                                >
+                                  Edit
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteUser(user.username)}
+                                  disabled={user.username === "admin"}
+                                  className="rounded-full bg-[#f8d7d7] px-2 py-1 text-[10px] font-semibold text-[#9b3b34] disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                  Hapus
+                                </button>
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </ScrollArea>
+
+            {systemUsers.length > 5 && (
+              <div className="flex items-center justify-between border-t border-[#ebdcc7] bg-[#f7efe8] p-3">
+                <button
+                  type="button"
+                  onClick={() => setUserPage((page) => Math.max(1, page - 1))}
+                  disabled={userPage === 1}
+                  className="flex h-9 w-9 items-center justify-center rounded-full bg-[#f3e7d9] text-[#5d4235] disabled:cursor-not-allowed disabled:opacity-50"
+                  aria-label="Halaman pengguna sebelumnya"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+                <span className="text-sm font-medium text-[#4d382f]">Halaman {userPage} / {userTotalPages}</span>
+                <button
+                  type="button"
+                  onClick={() => setUserPage((page) => Math.min(userTotalPages, page + 1))}
+                  disabled={userPage === userTotalPages}
+                  className="flex h-9 w-9 items-center justify-center rounded-full bg-[#7c4a2d] text-[#fffaf5] disabled:cursor-not-allowed disabled:opacity-50"
+                  aria-label="Halaman pengguna berikutnya"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
+            )}
+          </div>
           </div>
         </div>
-      </div>
+      </ScrollArea>
     );
   };
 
@@ -1189,123 +1289,6 @@ export default function App() {
         </div>
       )}
 
-      <div className="rounded-[24px] border border-[#eddcc3] bg-[#fffaf5] p-5 shadow-[0_12px_24px_rgba(88,63,46,0.04)] md:col-span-2">
-        <div className="flex items-center gap-3">
-          <div className="rounded-full bg-[#f3e9dc] p-2 text-[#5d4235]">
-            <Users className="h-4 w-4" />
-          </div>
-          <h3 className="text-lg font-semibold text-[#2b1d18]">Kelola Kasir</h3>
-        </div>
-
-        <form onSubmit={handleAddUser} className="mt-5 grid gap-3 md:grid-cols-3 xl:grid-cols-4">
-          <Input
-            value={newUser.username}
-            onChange={(event) => setNewUser((prev) => ({ ...prev, username: event.target.value }))}
-            placeholder="Username"
-            className="h-11 rounded-2xl border-[#ebdcc7] bg-[#f9f2ea] text-[#2b1d18]"
-          />
-          <Input
-            type="password"
-            value={newUser.password}
-            onChange={(event) => setNewUser((prev) => ({ ...prev, password: event.target.value }))}
-            placeholder="Password"
-            className="h-11 rounded-2xl border-[#ebdcc7] bg-[#f9f2ea] text-[#2b1d18]"
-          />
-          <select
-            value={newUser.role}
-            onChange={(event) => setNewUser((prev) => ({ ...prev, role: event.target.value as Role }))}
-            className="h-11 rounded-2xl border border-[#ebdcc7] bg-[#f9f2ea] px-3 text-[#2b1d18] outline-none"
-          >
-            <option value="admin">Admin</option>
-            <option value="investor">Investor</option>
-            <option value="kasir">Kasir</option>
-          </select>
-          <Button type="submit" className="h-11 rounded-2xl bg-[#7c4a2d] text-[#fffaf5] hover:bg-[#6d3f2a]">
-            Tambah
-          </Button>
-        </form>
-
-        <div className="mt-5 space-y-3">
-          {systemUsers.map((user) => {
-            const isEditing = editingUserUsername === user.username;
-
-            return (
-              <div key={`${user.role}-${user.username}`} className="rounded-2xl bg-[#f8f0e7] p-3">
-                {isEditing ? (
-                  <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-5">
-                    <Input
-                      value={userDraft.name}
-                      onChange={(event) => setUserDraft((prev) => ({ ...prev, name: event.target.value }))}
-                      className="h-10 rounded-xl border-[#ebdcc7] bg-[#f9f2ea] text-[#2b1d18]"
-                    />
-                    <Input
-                      value={userDraft.username}
-                      onChange={(event) => setUserDraft((prev) => ({ ...prev, username: event.target.value }))}
-                      className="h-10 rounded-xl border-[#ebdcc7] bg-[#f9f2ea] text-[#2b1d18]"
-                    />
-                    <Input
-                      type="password"
-                      value={userDraft.password}
-                      onChange={(event) => setUserDraft((prev) => ({ ...prev, password: event.target.value }))}
-                      className="h-10 rounded-xl border-[#ebdcc7] bg-[#f9f2ea] text-[#2b1d18]"
-                    />
-                    <select
-                      value={userDraft.role}
-                      onChange={(event) => setUserDraft((prev) => ({ ...prev, role: event.target.value as Role }))}
-                      className="h-10 rounded-xl border border-[#ebdcc7] bg-[#f9f2ea] px-3 text-[#2b1d18] outline-none"
-                    >
-                      <option value="admin">Admin</option>
-                      <option value="investor">Investor</option>
-                      <option value="kasir">Kasir</option>
-                    </select>
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => handleSaveUserEdit(user.username)}
-                        className="rounded-full bg-[#7c4a2d] px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-white"
-                      >
-                        Simpan
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setEditingUserUsername(null)}
-                        className="rounded-full bg-[#f3e7d9] px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#5d4235]"
-                      >
-                        Batal
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <p className="font-medium text-[#2b1d18]">{user.name}</p>
-                      <p className="text-xs text-[#7d685f]">{user.username} • {user.role}</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => handleStartEditUser(user)}
-                        disabled={user.username === "admin"}
-                        className="rounded-full bg-[#edf3ef] px-2 py-1 text-xs font-semibold text-[#2d5b45] disabled:cursor-not-allowed disabled:opacity-40"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteUser(user.username)}
-                        disabled={user.username === "admin"}
-                        className="rounded-full bg-[#f8d7d7] px-2 py-1 text-xs font-semibold text-[#9b3b34] disabled:cursor-not-allowed disabled:opacity-40"
-                      >
-                        {user.username === "admin" ? "Default" : "Hapus"}
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </div>
     </div>
   );
 
@@ -1475,7 +1458,7 @@ export default function App() {
 
           </header>
 
-          <div className="min-h-0 flex-1 overflow-hidden p-4 sm:p-5 md:p-6">
+          <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5 md:p-6">
             {isCatalogView ? (
               <>
                 <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -1635,7 +1618,7 @@ export default function App() {
               </div>
             </div>
 
-            <ScrollArea className="flex-1 p-4 sm:p-5">
+            <ScrollArea className="flex-1 overflow-y-auto p-4 sm:p-5">
               {cart.length === 0 ? (
                 <div className="flex h-full min-h-[220px] flex-col items-center justify-center rounded-[24px] border border-dashed border-[#d8c3a5] bg-[#fffaf5] p-6 text-center text-[#7d685f]">
                   <ShoppingCart className="mb-4 h-12 w-12 opacity-50" />

@@ -1,4 +1,4 @@
-import { Coffee, Cookie, Pencil, Plus, Trash2, UtensilsCrossed } from "lucide-react";
+import { Coffee, Cookie, Plus, UtensilsCrossed } from "lucide-react";
 import { Button } from "./button";
 import { Card } from "./card";
 
@@ -9,13 +9,10 @@ interface ProductCardProps {
   category: string;
   stock: number;
   disabled?: boolean;
-  isAdmin?: boolean;
   onAdd: () => void;
-  onEdit?: () => void;
-  onDelete?: () => void;
 }
 
-export function ProductCard({ name, price, category, stock, disabled = false, isAdmin = false, onAdd, onEdit, onDelete }: ProductCardProps) {
+export function ProductCard({ name, price, category, stock, disabled = false, onAdd }: ProductCardProps) {
   const categoryColor = {
     Minuman: "bg-[#eaf3ff] text-[#376999]",
     Makanan: "bg-[#fff1d8] text-[#8e5b1f]",
@@ -60,32 +57,6 @@ export function ProductCard({ name, price, category, stock, disabled = false, is
             <Plus className="h-4 w-4" />
             {disabled ? "Tidak Tersedia" : "Tambah"}
           </Button>
-
-          {isAdmin && (onEdit || onDelete) && (
-            <div className="flex gap-2">
-              {onEdit && (
-                <button
-                  type="button"
-                  onClick={onEdit}
-                  className="flex flex-1 items-center justify-center gap-1 rounded-xl border border-[#d9c7b2] bg-[#edf3ef] px-2 py-2 text-[11px] font-semibold text-[#2d5b45]"
-                >
-                  <Pencil className="h-3.5 w-3.5" />
-                  Edit
-                </button>
-              )}
-
-              {onDelete && (
-                <button
-                  type="button"
-                  onClick={onDelete}
-                  className="flex flex-1 items-center justify-center gap-1 rounded-xl border border-[#efc7c2] bg-[#f8d7d7] px-2 py-2 text-[11px] font-semibold text-[#9b3b34]"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                  Hapus
-                </button>
-              )}
-            </div>
-          )}
         </div>
       </div>
     </Card>

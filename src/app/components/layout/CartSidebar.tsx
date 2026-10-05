@@ -29,8 +29,8 @@ export function CartSidebar({
   formatCurrency,
 }: CartSidebarProps) {
   return (
-    <aside className="flex w-full flex-col border-t border-[#ead8c1] bg-[#f8f1ea] xl:w-[390px] xl:border-l xl:border-t-0">
-      <div className="border-b border-[#ead8c1] bg-[linear-gradient(180deg,#f9f3ee_0%,#f4e9df_100%)] p-4 sm:p-6">
+    <aside className="flex w-full flex-col border-t border-[#ead8c1] bg-[#f8f1ea] md:w-[320px] lg:w-[340px] xl:w-[390px] xl:border-l xl:border-t-0">
+      <div className="border-b border-[#ead8c1] bg-[linear-gradient(180deg,#f9f3ee_0%,#f4e9df_100%)] p-4 sm:p-5 md:p-6">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#f1e1ce] text-[#5d4235] shadow-[0_8px_18px_rgba(124,74,45,0.14)]">

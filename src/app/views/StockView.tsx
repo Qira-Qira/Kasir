@@ -46,34 +46,34 @@ export function StockView({
   const paginatedStockProducts = stockFilteredProducts.slice((safeStockPage - 1) * 6, safeStockPage * 6);
 
   return (
-    <div className="flex min-h-0 flex-col space-y-5 overflow-hidden">
-      <div className="grid gap-4 md:grid-cols-3">
-        <div className="rounded-[24px] border border-[#eddcc3] bg-[#fffaf5] p-4 shadow-[0_12px_24px_rgba(88,63,46,0.04)]">
+    <div className="flex min-h-0 flex-col space-y-4 overflow-hidden sm:space-y-5">
+      <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
+        <div className="rounded-[20px] border border-[#eddcc3] bg-[#fffaf5] p-4 shadow-[0_12px_24px_rgba(88,63,46,0.04)] sm:rounded-[24px]">
           <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#8d6d5a]">Total Item</p>
-          <p className="mt-2 text-2xl font-semibold text-[#2b1d18]">{products.length}</p>
+          <p className="mt-2 text-xl font-semibold text-[#2b1d18] sm:text-2xl">{products.length}</p>
         </div>
-        <div className="rounded-[24px] border border-[#eddcc3] bg-[#fffaf5] p-4 shadow-[0_12px_24px_rgba(88,63,46,0.04)]">
+        <div className="rounded-[20px] border border-[#eddcc3] bg-[#fffaf5] p-4 shadow-[0_12px_24px_rgba(88,63,46,0.04)] sm:rounded-[24px]">
           <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#8d6d5a]">Low Stock</p>
-          <p className="mt-2 text-2xl font-semibold text-[#2b1d18]">{products.filter((product) => product.stock <= 10).length}</p>
+          <p className="mt-2 text-xl font-semibold text-[#2b1d18] sm:text-2xl">{products.filter((product) => product.stock <= 10).length}</p>
         </div>
-        <div className="rounded-[24px] border border-[#eddcc3] bg-[#fffaf5] p-4 shadow-[0_12px_24px_rgba(88,63,46,0.04)]">
+        <div className="rounded-[20px] border border-[#eddcc3] bg-[#fffaf5] p-4 shadow-[0_12px_24px_rgba(88,63,46,0.04)] sm:rounded-[24px] sm:col-span-2 md:col-span-1">
           <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#8d6d5a]">Status</p>
-          <p className="mt-2 text-2xl font-semibold text-[#2b1d18]">{products.filter((product) => product.stock <= 10).length === 0 ? "Aman" : "Perlu Tindak"}</p>
+          <p className="mt-2 text-xl font-semibold text-[#2b1d18] sm:text-2xl">{products.filter((product) => product.stock <= 10).length === 0 ? "Aman" : "Perlu Tindak"}</p>
         </div>
       </div>
 
-      <div className="rounded-[24px] border border-[#eddcc3] bg-[#fffaf5] p-4 sm:p-5 shadow-[0_12px_24px_rgba(88,63,46,0.04)]">
-        <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+      <div className="rounded-[22px] border border-[#eddcc3] bg-[#fffaf5] p-4 shadow-[0_12px_24px_rgba(88,63,46,0.04)] sm:p-5 sm:rounded-[24px]">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-3">
             <div className="rounded-full bg-[#f3e9dc] p-2 text-[#5d4235]">
               <ListOrdered className="h-4 w-4" />
             </div>
-            <h3 className="text-lg font-semibold text-[#2b1d18]">Stok Menu</h3>
+            <h3 className="text-base font-semibold text-[#2b1d18] sm:text-lg">Stok Menu</h3>
           </div>
           <Badge className="w-fit rounded-full bg-[#edf3ef] text-[#2d5b45]">{products.filter((product) => product.stock <= 10).length} needs attention</Badge>
         </div>
 
-        <div className="mt-4 flex flex-col gap-3 lg:flex-row lg:items-center">
+        <div className="mt-4 flex flex-col gap-3 md:flex-row md:items-center">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8a6a52]" />
             <Input
@@ -96,7 +96,7 @@ export function StockView({
                   setStockCategory(category);
                   setStockPage(1);
                 }}
-                className={`rounded-full px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] ${stockCategory === category ? "bg-[#7c4a2d] text-white" : "bg-[#f3e7d9] text-[#5d4235]"}`}
+                className={`rounded-full px-2.5 py-1.5 text-[9px] font-semibold uppercase tracking-[0.12em] sm:px-3 ${stockCategory === category ? "bg-[#7c4a2d] text-white" : "bg-[#f3e7d9] text-[#5d4235]"}`}
               >
                 {category}
               </button>
@@ -112,8 +112,8 @@ export function StockView({
                   <div key={product.id} className="rounded-2xl bg-[#fffaf5] p-3 shadow-[0_8px_16px_rgba(88,63,46,0.03)]">
                     <div className="flex items-start justify-between gap-2">
                       <div>
-                        <p className="font-medium text-[#2b1d18]">{product.name}</p>
-                        <p className="mt-1 text-xs text-[#7d685f]">{product.category}</p>
+                        <p className="text-sm font-medium text-[#2b1d18] sm:text-base">{product.name}</p>
+                        <p className="mt-1 text-[11px] text-[#7d685f]">{product.category}</p>
                       </div>
                       <span className={`rounded-full px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] ${product.stock <= 10 ? "bg-[#f8d7d7] text-[#9b3b34]" : "bg-[#edf3ef] text-[#2d5b45]"}`}>
                         {product.stock <= 10 ? "Low" : "Good"}

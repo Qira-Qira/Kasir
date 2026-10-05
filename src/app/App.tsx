@@ -126,8 +126,6 @@ export default function App() {
             onSearchChange={setSearchQuery}
             onCategoryChange={setSelectedCategory}
             onAddToCart={addToCart}
-            onStartEditProduct={handleStartEditProduct}
-            onDeleteProduct={setProductToDeleteId}
           />
         );
       case "Laporan":

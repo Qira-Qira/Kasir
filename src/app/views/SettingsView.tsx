@@ -63,17 +63,17 @@ export function SettingsView({
   const paginatedUsers = filteredUsersList.slice((safeUserPage - 1) * 9, safeUserPage * 9);
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-5 overflow-hidden">
-      <div className="grid h-full min-h-0 gap-5 lg:grid-cols-[1.15fr_0.95fr]">
-        <div className="flex min-h-0 flex-col overflow-hidden rounded-[24px] border border-[#eddcc3] bg-[#fffaf5] p-5 shadow-[0_12px_24px_rgba(88,63,46,0.04)]">
+    <div className="flex h-full min-h-0 flex-col gap-4 overflow-hidden sm:gap-5">
+      <div className="grid h-full min-h-0 gap-4 md:grid-cols-2 lg:grid-cols-[1.15fr_0.95fr]">
+        <div className="flex min-h-0 flex-col overflow-hidden rounded-[22px] border border-[#eddcc3] bg-[#fffaf5] p-4 shadow-[0_12px_24px_rgba(88,63,46,0.04)] sm:rounded-[24px] sm:p-5">
           <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
               <div className="rounded-full bg-[#f3e9dc] p-2 text-[#5d4235]">
                 <Settings className="h-4 w-4" />
               </div>
-              <h3 className="text-lg font-semibold text-[#2b1d18]">Kelola Menu</h3>
+              <h3 className="text-base font-semibold text-[#2b1d18] sm:text-lg">Kelola Menu</h3>
             </div>
-            <span className="rounded-full bg-[#edf3ef] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#2d5b45]">
+            <span className="w-fit rounded-full bg-[#edf3ef] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#2d5b45]">
               {filteredMenuList.length} item
             </span>
           </div>
@@ -137,15 +137,15 @@ export function SettingsView({
           )}
         </div>
 
-        <div className="flex min-h-0 flex-col overflow-hidden rounded-[24px] border border-[#eddcc3] bg-[#fffaf5] p-5 shadow-[0_12px_24px_rgba(88,63,46,0.04)]">
+        <div className="flex min-h-0 flex-col overflow-hidden rounded-[22px] border border-[#eddcc3] bg-[#fffaf5] p-4 shadow-[0_12px_24px_rgba(88,63,46,0.04)] sm:rounded-[24px] sm:p-5">
           <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
               <div className="rounded-full bg-[#f3e9dc] p-2 text-[#5d4235]">
                 <Users className="h-4 w-4" />
               </div>
-              <h3 className="text-lg font-semibold text-[#2b1d18]">Kelola Akun</h3>
+              <h3 className="text-base font-semibold text-[#2b1d18] sm:text-lg">Kelola Akun</h3>
             </div>
-            <span className="rounded-full bg-[#edf3ef] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#2d5b45]">
+            <span className="w-fit rounded-full bg-[#edf3ef] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#2d5b45]">
               {filteredUsersList.length} user
             </span>
           </div>

@@ -1,5 +1,5 @@
-import { Clock, LogOut, Moon, Sun } from "lucide-react";
-import type { ReactNode } from "react";
+import { Clock, LogOut, Menu, Moon, Sun, X } from "lucide-react";
+import { useState, type ReactNode } from "react";
 import type { AuthState, ViewKey } from "../../types";
 
 interface AppShellProps {
@@ -29,6 +29,8 @@ export function AppShell({
   children,
   sidebar,
 }: AppShellProps) {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
   const appShellClass = isDarkMode ? "bg-[#0f172a] text-[#f8fafc]" : "bg-[radial-gradient(circle_at_top,_#f7efe7,_#f0e2d3_38%,_#e8d4b5_100%)] text-[#1f2937]";
   const appPanelClass = isDarkMode ? "border-[#2f3747] bg-[#111827]/95" : "border-[#e9d8c2] bg-[#fffaf5]/95";
   const appSidebarClass = isDarkMode ? "border-[#2f3747] bg-[#111827]" : "border-[#ead8c1] bg-[#f7efe6]";
@@ -83,17 +85,18 @@ export function AppShell({
         <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
           <header className={`relative overflow-hidden border-b px-4 py-4 sm:px-6 sm:py-5 ${appHeaderClass}`}>
             <div className="absolute inset-y-0 right-0 w-56 bg-[radial-gradient(circle,_rgba(124,74,45,0.10),_transparent_65%)]" />
-            <div className="relative flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className={`text-[10px] font-semibold uppercase tracking-[0.28em] ${isDarkMode ? "text-[#d9cab6]" : "text-[#8d6d5a]"}`}>
-                  Cafe & Resto
-                </p>
-                <h1 className={`mt-1 text-2xl font-semibold ${isDarkMode ? "text-[#f3f4f6]" : "text-[#2b1d18]"}`}>
-                  POSLite ESB
-                </h1>
-              </div>
+            <div className="relative flex items-center justify-between gap-3">
+              <button
+                type="button"
+                onClick={() => setMobileMenuOpen((prev) => !prev)}
+                className="flex h-10 w-10 items-center justify-center rounded-full border border-[#ead8c1] bg-[#fffaf5]/80 text-[#5d4235] shadow-sm xl:hidden"
+                aria-label="Buka menu navigasi"
+                title="Menu"
+              >
+                {mobileMenuOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+              </button>
 
-              <div className="ml-auto flex flex-wrap items-center gap-3">
+              <div className="ml-auto flex items-center gap-2 sm:gap-3">
                 <div
                   className={`flex items-center gap-2 rounded-full px-3 py-2 text-sm font-medium shadow-inner ${
                     isDarkMode ? "bg-[#1f2937] text-[#f3f4f6] shadow-[#0b1220]" : "bg-[#f3e6d9] text-[#534036] shadow-[#f0e2d6]"
@@ -128,6 +131,45 @@ export function AppShell({
                 </div>
               </div>
             </div>
+
+            {mobileMenuOpen && (
+              <div className="relative mt-4 space-y-2 xl:hidden">
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {visibleNavItems.map(({ key, label, icon: Icon }) => (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => {
+                        setActiveView(key);
+                        setMobileMenuOpen(false);
+                      }}
+                      className={`flex items-center justify-center gap-2 rounded-2xl px-3 py-2.5 text-sm font-medium transition-all ${
+                        activeView === key
+                          ? "bg-[#7c4a2d] text-[#fffaf5] shadow-[0_10px_18px_rgba(124,74,45,0.18)]"
+                          : "bg-[#f3e7d9] text-[#5c463b]"
+                      }`}
+                      aria-label={label}
+                      title={label}
+                    >
+                      <Icon className="h-4 w-4" />
+                      <span>{label}</span>
+                    </button>
+                  ))}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleLogout();
+                    setMobileMenuOpen(false);
+                  }}
+                  className="flex w-full items-center justify-center gap-2 rounded-2xl border border-[#ead8c1] bg-[#fffaf5] px-3 py-2.5 text-sm font-medium text-[#4d382f]"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Logout
+                </button>
+              </div>
+            )}
           </header>
 
           <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5 md:p-6">{children}</div>

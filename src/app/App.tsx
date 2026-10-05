@@ -889,9 +889,9 @@ export default function App() {
       );
     });
 
-    const totalPages = Math.max(1, Math.ceil(filteredMenuList.length / 5));
+    const totalPages = Math.max(1, Math.ceil(filteredMenuList.length / 7));
     const safeSettingsPage = Math.min(settingsPage, totalPages);
-    const paginatedProducts = filteredMenuList.slice((safeSettingsPage - 1) * 5, safeSettingsPage * 5);
+    const paginatedProducts = filteredMenuList.slice((safeSettingsPage - 1) * 7, safeSettingsPage * 7);
 
     const userQuery = userSearch.trim().toLowerCase();
     const filteredUsersList = systemUsers.filter((user) => {
@@ -903,9 +903,9 @@ export default function App() {
       );
     });
 
-    const userTotalPages = Math.max(1, Math.ceil(filteredUsersList.length / 5));
+    const userTotalPages = Math.max(1, Math.ceil(filteredUsersList.length / 9));
     const safeUserPage = Math.min(userPage, userTotalPages);
-    const paginatedUsers = filteredUsersList.slice((safeUserPage - 1) * 5, safeUserPage * 5);
+    const paginatedUsers = filteredUsersList.slice((safeUserPage - 1) * 9, safeUserPage * 9);
 
     return (
       <div className="flex h-full min-h-0 flex-col gap-5 overflow-hidden">
@@ -981,7 +981,7 @@ export default function App() {
               </div>
             </div>
 
-            {filteredMenuList.length > 5 && (
+            {filteredMenuList.length > 7 && (
               <div className="mt-5 flex shrink-0 items-center justify-between rounded-2xl bg-[#f8f0e7] p-3">
                 <button
                   type="button"
@@ -1042,7 +1042,7 @@ export default function App() {
             </div>
 
             <div className="mt-5 min-h-0 flex-1 overflow-hidden rounded-2xl border border-[#ebdcc7] bg-[#f8f0e7]">
-              <div className="h-full max-h-[420px] overflow-y-auto overflow-x-auto">
+              <div className="h-full max-h-[560px] overflow-y-auto overflow-x-auto">
                 <table className="w-full min-w-[420px] table-fixed text-left text-sm text-[#2b1d18]">
                   <thead className="sticky top-0 z-10 bg-[#f1e4d6] text-[#5d4235]">
                     <tr>
@@ -1093,7 +1093,7 @@ export default function App() {
                 </table>
               </div>
 
-              {filteredUsersList.length > 5 && (
+              {filteredUsersList.length > 9 && (
                 <div className="flex items-center justify-between border-t border-[#ebdcc7] bg-[#f7efe8] p-3">
                   <button
                     type="button"

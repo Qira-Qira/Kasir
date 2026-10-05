@@ -1,161 +1,28 @@
 import { useEffect, useMemo, useState } from "react";
-import {
-  BarChart3,
-  BriefcaseBusiness,
-  ChartNoAxesCombined,
-  CircleDollarSign,
-  ChevronLeft,
-  ChevronRight,
-  Clock,
-  Coffee,
-  Cookie,
-  LayoutGrid,
-  ListOrdered,
-  LogOut,
-  Package,
-  Search,
-  Settings,
-  ShieldCheck,
-  ShoppingCart,
-  Sun,
-  Moon,
-  Trash2,
-  TrendingUp,
-  Users,
-  UtensilsCrossed,
-  type LucideIcon,
-} from "lucide-react";
-import { ProductCard } from "./components/ui/ProductCard";
+import { Clock, LogOut, Moon, ShoppingCart, Sun, Trash2 } from "lucide-react";
+import { Badge } from "./components/ui/badge";
+import { Button } from "./components/ui/button";
 import { CartItem } from "./components/ui/CartItem";
+import { Input } from "./components/ui/input";
 import { PaymentDialog } from "./components/ui/PaymentDialog";
 import { ReceiptDialog } from "./components/ui/ReceiptDialog";
-import { Button } from "./components/ui/button";
-import { Input } from "./components/ui/input";
-import { Tabs, TabsList, TabsTrigger } from "./components/ui/tabs";
 import { ScrollArea } from "./components/ui/scroll-area";
-import { Badge } from "./components/ui/badge";
-
-type Role = "admin" | "investor" | "kasir";
-type ViewKey = "Menu" | "Laporan" | "Stok" | "Dashboard" | "Pengaturan";
-
-interface Product {
-  id: string;
-  name: string;
-  price: number;
-  category: string;
-  stock: number;
-  createdBy?: "admin" | "system";
-}
-
-interface CartItemType {
-  id: string;
-  name: string;
-  price: number;
-  quantity: number;
-}
-
-interface Transaction {
-  id: string;
-  items: { name: string; quantity: number; price: number }[];
-  total: number;
-  paymentMethod: string;
-  amountPaid: number;
-  orderType: "Dine In" | "Takeaway";
-  date: string;
-}
-
-interface NavItem {
-  key: ViewKey;
-  label: string;
-  icon: LucideIcon;
-}
-
-interface AuthState {
-  username: string;
-  name: string;
-  role: Role;
-}
-
-interface UserAccount {
-  username: string;
-  password: string;
-  role: Role;
-  name: string;
-}
-
-const MOCK_PRODUCTS: Product[] = [
-  { id: "1", name: "Espresso", price: 15000, category: "Minuman", stock: 24, createdBy: "admin" },
-  { id: "2", name: "Cappuccino", price: 25000, category: "Minuman", stock: 18, createdBy: "admin" },
-  { id: "3", name: "Latte", price: 28000, category: "Minuman", stock: 12, createdBy: "admin" },
-  { id: "4", name: "Americano", price: 20000, category: "Minuman", stock: 16, createdBy: "admin" },
-  { id: "5", name: "Croissant", price: 18000, category: "Snack", stock: 9, createdBy: "admin" },
-  { id: "6", name: "Chocolate Cake", price: 35000, category: "Snack", stock: 7, createdBy: "admin" },
-  { id: "7", name: "Blueberry Muffin", price: 22000, category: "Snack", stock: 10, createdBy: "admin" },
-  { id: "8", name: "Green Tea", price: 15000, category: "Minuman", stock: 11, createdBy: "admin" },
-  { id: "9", name: "Iced Tea", price: 12000, category: "Minuman", stock: 14, createdBy: "admin" },
-  { id: "10", name: "Sandwich", price: 30000, category: "Makanan", stock: 8, createdBy: "admin" },
-  { id: "11", name: "Smoothie Bowl", price: 38000, category: "Makanan", stock: 6, createdBy: "admin" },
-  { id: "12", name: "Orange Juice", price: 18000, category: "Minuman", stock: 13, createdBy: "admin" },
-];
-
-const USER_ACCOUNTS: UserAccount[] = [
-  { username: "admin", password: "admin123", role: "admin", name: "Admin POS" },
-  { username: "investor", password: "investor123", role: "investor", name: "Investor Team" },
-  { username: "kasir", password: "kasir123", role: "kasir", name: "Kasir Outlet" },
-];
-
-const ROLE_OPTIONS = [
-  { role: "admin" as const, label: "Admin", subtitle: "Kelola semua operasional", icon: ShieldCheck },
-  { role: "investor" as const, label: "Investor", subtitle: "Pantau performa bisnis", icon: BriefcaseBusiness },
-  { role: "kasir" as const, label: "Kasir", subtitle: "Kasir & penjualan harian", icon: Users },
-];
-
-const ROLE_CONFIG: Record<
+import { ROLE_CONFIG, MOCK_PRODUCTS, USER_ACCOUNTS, CATEGORIES } from "./constants";
+import type {
+  AuthState,
+  CartItemType,
+  Product,
   Role,
-  {
-    label: string;
-    navItems: NavItem[];
-    accent: string;
-    badge: string;
-  }
-> = {
-  admin: {
-    label: "Admin",
-    navItems: [
-      { key: "Menu", label: "Menu", icon: ListOrdered },
-      { key: "Stok", label: "Stok", icon: Package },
-      { key: "Laporan", label: "Laporan", icon: BarChart3 },
-      { key: "Pengaturan", label: "Kelola Menu & Akun", icon: Users },
-    ],
-    accent: "bg-[#f4e6d7] text-[#5d4337]",
-    badge: "bg-[#7c4a2d] text-white",
-  },
-  investor: {
-    label: "Investor",
-    navItems: [
-      { key: "Dashboard", label: "Dashboard", icon: TrendingUp },
-      { key: "Laporan", label: "Laporan", icon: BarChart3 },
-    ],
-    accent: "bg-[#edf3ef] text-[#2d5b45]",
-    badge: "bg-[#2d5b45] text-white",
-  },
-  kasir: {
-    label: "Kasir",
-    navItems: [
-      { key: "Menu", label: "Menu", icon: ListOrdered },
-      { key: "Laporan", label: "Laporan", icon: BarChart3 },
-    ],
-    accent: "bg-[#fbe7df] text-[#8d4c3d]",
-    badge: "bg-[#a95d3a] text-white",
-  },
-};
-
-const formatCurrency = (value: number) =>
-  new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    maximumFractionDigits: 0,
-  }).format(value);
+  Transaction,
+  UserAccount,
+  ViewKey,
+} from "./types";
+import { formatCurrency, getCurrentTime } from "./utils";
+import { DashboardView } from "./views/DashboardView";
+import { MenuView } from "./views/MenuView";
+import { ReportView } from "./views/ReportView";
+import { SettingsView } from "./views/SettingsView";
+import { StockView } from "./views/StockView";
 
 export default function App() {
   const [auth, setAuth] = useState<AuthState | null>(null);
@@ -187,8 +54,6 @@ export default function App() {
   const [receiptDialogOpen, setReceiptDialogOpen] = useState(false);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [currentTransaction, setCurrentTransaction] = useState<Transaction | null>(null);
-  const [selectedTransactionId, setSelectedTransactionId] = useState<string | null>(null);
-  const [reportFilter, setReportFilter] = useState<"all" | "Cash" | "QRIS" | "Debit" | "Transfer">("all");
   const [reportRange, setReportRange] = useState<"Hari Ini" | "7 Hari Terakhir" | "Bulanan" | "Custom Date">("7 Hari Terakhir");
   const [reportShift, setReportShift] = useState<"Semua Shift" | "Shift 1" | "Shift 2">("Semua Shift");
   const [reportBranch, setReportBranch] = useState<"Semua Cabang" | "Cabang Utama" | "Cabang 2">("Semua Cabang");
@@ -197,17 +62,8 @@ export default function App() {
   const [stockPage, setStockPage] = useState(1);
   const [settingsPage, setSettingsPage] = useState(1);
 
-  const categories = ["Semua", "Minuman", "Makanan", "Snack"] as const;
-  const categoryMeta: Record<string, { icon: LucideIcon }> = {
-    Semua: { icon: LayoutGrid },
-    Minuman: { icon: Coffee },
-    Makanan: { icon: UtensilsCrossed },
-    Snack: { icon: Cookie },
-  };
-  const currentTime = new Date().toLocaleTimeString("id-ID", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  const categories = CATEGORIES;
+  const currentTime = getCurrentTime();
 
   const roleConfig = auth ? ROLE_CONFIG[auth.role] : ROLE_CONFIG.admin;
   const visibleNavItems = useMemo(() => roleConfig.navItems, [roleConfig]);
@@ -222,23 +78,11 @@ export default function App() {
     setUserPage((page) => Math.min(page, maxUserPages));
   }, [systemUsers.length]);
 
-  const recentTransactions = transactions.slice(0, 3);
-  const filteredTransactions =
-    reportFilter === "all"
-      ? transactions
-      : transactions.filter((transaction) => transaction.paymentMethod === reportFilter);
-  const selectedTransaction =
-    transactions.find((transaction) => transaction.id === selectedTransactionId) ?? filteredTransactions[0] ?? null;
-  const totalRevenue = transactions.reduce((sum, transaction) => sum + transaction.total, 0);
-  const averageBasket = transactions.length > 0 ? totalRevenue / transactions.length : 0;
-
   const accessibleProducts = useMemo(() => {
     if (!auth) return products;
-
     if (auth.role === "kasir") {
       return products.filter((product) => product.createdBy === "admin" || product.createdBy === undefined);
     }
-
     return products;
   }, [auth, products]);
 
@@ -252,7 +96,6 @@ export default function App() {
 
   const addToCart = (product: Product) => {
     if (product.stock <= 0) return;
-
     setProducts((prev) =>
       prev.map((item) => (item.id === product.id ? { ...item, stock: Math.max(0, item.stock - 1) } : item))
     );
@@ -394,19 +237,13 @@ export default function App() {
 
   const handleRestockProduct = (id: string, amount = 10) => {
     setProducts((prev) =>
-      prev.map((product) =>
-        product.id === id ? { ...product, stock: product.stock + amount } : product
-      )
+      prev.map((product) => (product.id === id ? { ...product, stock: product.stock + amount } : product))
     );
   };
 
   const handleStartEditUser = (user: UserAccount) => {
     setEditingUserUsername(user.username);
-    setUserDraft({
-      username: user.username,
-      password: user.password,
-      role: user.role,
-    });
+    setUserDraft({ username: user.username, password: user.password, role: user.role });
   };
 
   const handleCloseEditUser = () => {
@@ -418,9 +255,7 @@ export default function App() {
     const username = userDraft.username.trim();
     const password = userDraft.password.trim();
 
-    if (!username || !password) {
-      return;
-    }
+    if (!username || !password) return;
 
     setSystemUsers((prev) =>
       prev.map((user) =>
@@ -439,24 +274,14 @@ export default function App() {
     const username = newUser.username.trim();
     const password = newUser.password.trim();
 
-    if (!username || !password) {
-      return;
-    }
+    if (!username || !password) return;
 
     setSystemUsers((prev) => {
       if (prev.some((user) => user.username.toLowerCase() === username.toLowerCase())) {
         return prev;
       }
 
-      return [
-        ...prev,
-        {
-          name: username,
-          username,
-          password,
-          role: newUser.role,
-        },
-      ];
+      return [...prev, { name: username, username, password, role: newUser.role }];
     });
 
     setNewUser({ username: "", password: "", role: "kasir" });
@@ -474,7 +299,11 @@ export default function App() {
   const totalAmount = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
 
-  const handlePaymentComplete = (paymentMethod: string, amountPaid: number, orderType: "Dine In" | "Takeaway") => {
+  const handlePaymentComplete = (
+    paymentMethod: string,
+    amountPaid: number,
+    orderType: "Dine In" | "Takeaway"
+  ) => {
     const transaction: Transaction = {
       id: `TRX-${Date.now()}`,
       items: cart.map((item) => ({
@@ -532,1047 +361,71 @@ export default function App() {
     setPaymentDialogOpen(false);
   };
 
-  const renderDashboardView = () => (
-    <div className="space-y-5">
-      <div className="grid gap-4 lg:grid-cols-[1.5fr_1fr]">
-        <div className="rounded-[24px] border border-[#eddcc3] bg-[#fffaf5] p-5 shadow-[0_12px_24px_rgba(88,63,46,0.04)]">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#8d6d5a]">Trend</p>
-              <h3 className="mt-1 text-lg font-semibold text-[#2b1d18]">Pertumbuhan Penjualan</h3>
-            </div>
-            <div className="rounded-full bg-[#edf3ef] p-2 text-[#2d5b45]">
-              <TrendingUp className="h-4 w-4" />
-            </div>
-          </div>
-
-          <div className="mt-5 grid gap-3 sm:grid-cols-3">
-            <div className="rounded-2xl bg-[#f4e6d7] p-3">
-              <p className="text-[10px] uppercase tracking-[0.12em] text-[#866c5d]">Hari Ini</p>
-              <p className="mt-2 text-lg font-semibold text-[#2b1d18]">Rp 1.2Jt</p>
-            </div>
-            <div className="rounded-2xl bg-[#edf3ef] p-3">
-              <p className="text-[10px] uppercase tracking-[0.12em] text-[#6d8175]">Minggu</p>
-              <p className="mt-2 text-lg font-semibold text-[#2b1d18]">Rp 3.8Jt</p>
-            </div>
-            <div className="rounded-2xl bg-[#fbe7df] p-3">
-              <p className="text-[10px] uppercase tracking-[0.12em] text-[#8f6d61]">Bulan</p>
-              <p className="mt-2 text-lg font-semibold text-[#2b1d18]">Rp 15.2Jt</p>
-            </div>
-          </div>
-
-          <div className="mt-6 rounded-[20px] bg-[#f8f0e7] p-4">
-            <div className="mb-3 flex items-center justify-between">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#8d6d5a]">Sales velocity</p>
-              <p className="text-sm font-semibold text-[#2b1d18]">87%</p>
-            </div>
-            <div className="flex h-3 overflow-hidden rounded-full bg-[#eee0ce]">
-              <span className="block w-[85%] rounded-full bg-[#7c4a2d]" />
-            </div>
-            <div className="mt-3 flex justify-between text-[10px] text-[#7d685f]">
-              <span>Target</span>
-              <span>Rp 1.8Jt</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="rounded-[24px] border border-[#eddcc3] bg-[#fffaf5] p-5 shadow-[0_12px_24px_rgba(88,63,46,0.04)]">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#8d6d5a]">Investor</p>
-          <h3 className="mt-1 text-lg font-semibold text-[#2b1d18]">Status Portofolio</h3>
-
-          <div className="mt-5 space-y-3">
-            <div className="flex items-center justify-between rounded-2xl bg-[#f8f0e7] p-3">
-              <span className="text-sm text-[#5f493d]">ROI</span>
-              <span className="font-semibold text-[#2b1d18]">+18.4%</span>
-            </div>
-            <div className="flex items-center justify-between rounded-2xl bg-[#f8f0e7] p-3">
-              <span className="text-sm text-[#5f493d]">Margin</span>
-              <span className="font-semibold text-[#2b1d18]">34.2%</span>
-            </div>
-            <div className="flex items-center justify-between rounded-2xl bg-[#f8f0e7] p-3">
-              <span className="text-sm text-[#5f493d]">Kas</span>
-              <span className="font-semibold text-[#2b1d18]">Rp 420Jt</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid gap-4 lg:grid-cols-2">
-        <div className="rounded-[24px] border border-[#eddcc3] bg-[#fffaf5] p-5 shadow-[0_12px_24px_rgba(88,63,46,0.04)]">
-          <div className="flex items-center justify-between">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#8d6d5a]">Top Products</p>
-            <Badge className="rounded-full bg-[#7c4a2d] text-white">Live</Badge>
-          </div>
-
-          <div className="mt-5 space-y-3">
-            {[
-              { name: "Cappuccino", sales: 142, share: "26%" },
-              { name: "Sandwich", sales: 98, share: "18%" },
-              { name: "Croissant", sales: 85, share: "15%" },
-            ].map((item) => (
-              <div key={item.name} className="rounded-2xl bg-[#f8f0e7] p-3">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="font-medium text-[#2b1d18]">{item.name}</span>
-                  <span className="text-[#7d685f]">{item.sales} sold</span>
-                </div>
-                <div className="mt-2 flex h-2 overflow-hidden rounded-full bg-[#efe0d0]">
-                  <span className="block rounded-full bg-[#c98b5b]" style={{ width: item.share }} />
-                </div>
-                <p className="mt-2 text-right text-[10px] font-semibold uppercase tracking-[0.12em] text-[#7d685f]">{item.share}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="rounded-[24px] border border-[#eddcc3] bg-[#fffaf5] p-5 shadow-[0_12px_24px_rgba(88,63,46,0.04)]">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#8d6d5a]">Operational Health</p>
-          <div className="mt-5 space-y-4">
-            {[
-              { label: "Customer satisfaction", value: 96, color: "bg-[#2d5b45]" },
-              { label: "Inventory accuracy", value: 91, color: "bg-[#7c4a2d]" },
-              { label: "Payment success", value: 99, color: "bg-[#c98b5b]" },
-            ].map((item) => (
-              <div key={item.label}>
-                <div className="mb-2 flex items-center justify-between text-sm text-[#5f493d]">
-                  <span>{item.label}</span>
-                  <span className="font-semibold text-[#2b1d18]">{item.value}%</span>
-                </div>
-                <div className="h-2 overflow-hidden rounded-full bg-[#f0e1cf]">
-                  <span className={`block h-full rounded-full ${item.color}`} style={{ width: `${item.value}%` }} />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <div className="rounded-[24px] border border-[#eddcc3] bg-[#fffaf5] p-5 shadow-[0_12px_24px_rgba(88,63,46,0.04)]">
-        <div className="flex items-center justify-between">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#8d6d5a]">Inventory Watchlist</p>
-          <Badge className="rounded-full bg-[#fbe7df] text-[#8d4c3d]">Low stock</Badge>
-        </div>
-
-        <div className="mt-5 space-y-3">
-          {lowStockProducts.length > 0 ? (
-            lowStockProducts.map((product) => (
-              <div key={product.id} className="flex items-center justify-between rounded-2xl bg-[#f8f0e7] p-3">
-                <div>
-                  <p className="font-medium text-[#2b1d18]">{product.name}</p>
-                  <p className="text-xs text-[#7d685f]">{product.category}</p>
-                </div>
-                <span className="rounded-full bg-[#f8d7d7] px-2.5 py-1 text-xs font-semibold text-[#9b3b34]">
-                  {product.stock} left
-                </span>
-              </div>
-            ))
-          ) : (
-            <div className="rounded-2xl bg-[#f8f0e7] p-4 text-sm text-[#7d685f]">Semua stok aman.</div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-
-  const renderMenuView = () => (
-    <div className="flex min-h-0 flex-col space-y-5 overflow-hidden">
-      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#8d6d5a]">Menu</p>
-          <h2 className="mt-1 text-xl font-semibold text-[#2b1d18]">Pilihan Produk</h2>
-        </div>
-
-        <div className="rounded-full bg-[#f4e9dd] px-3 py-1.5 text-sm font-medium text-[#5a453c] shadow-sm">
-          {filteredProducts.length} item
-        </div>
-      </div>
-
-      <div className="relative mb-5">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8a6a52]" />
-        <Input
-          placeholder="Cari produk..."
-          value={searchQuery}
-          onChange={(event) => setSearchQuery(event.target.value)}
-          className="h-12 rounded-2xl border-[#ebdcc7] bg-[#f9f2ea] pl-11 text-[#2b1d18] placeholder:text-[#9a8479] focus:ring-[#c98b5b]"
-        />
-      </div>
-
-      <Tabs value={selectedCategory} onValueChange={setSelectedCategory}>
-        <TabsList className="mb-5 h-auto w-full flex-wrap justify-start gap-1.5 rounded-2xl border border-[#ebdcc7] bg-[#f8f0e9] p-1.5">
-          {categories.map((category) => {
-            const Icon = categoryMeta[category]?.icon ?? LayoutGrid;
-            return (
-              <TabsTrigger
-                key={category}
-                value={category}
-                className="min-w-[90px] flex-1 rounded-xl px-2 py-2 text-[11px] sm:min-w-[100px] sm:px-3 sm:text-sm"
-              >
-                <span className="flex items-center justify-center gap-1.5 sm:gap-2">
-                  <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                  <span>{category}</span>
-                </span>
-              </TabsTrigger>
-            );
-          })}
-        </TabsList>
-      </Tabs>
-
-      <ScrollArea className="min-h-0 min-w-0 flex-1 h-[260px] sm:h-[320px] xl:h-[calc(100vh-330px)] overflow-y-auto">
-        <div className="grid min-w-0 grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 xl:grid-cols-4">
-          {filteredProducts.map((product) => (
-            <ProductCard
-              key={product.id}
-              id={product.id}
-              name={product.name}
-              price={product.price}
-              category={product.category}
-              stock={product.stock}
-              disabled={auth?.role === "investor" || product.stock <= 0}
-              isAdmin={auth?.role === "admin"}
-              onAdd={() => addToCart(product)}
-              onEdit={() => handleStartEditProduct(product)}
-              onDelete={() => setProductToDeleteId(product.id)}
-            />
-          ))}
-        </div>
-      </ScrollArea>
-    </div>
-  );
-
-  const renderReportView = () => {
-    const rangeOptions = ["Hari Ini", "7 Hari Terakhir", "Bulanan", "Custom Date"] as const;
-    const shiftOptions = ["Semua Shift", "Shift 1", "Shift 2"] as const;
-    const branchOptions = ["Semua Cabang", "Cabang Utama", "Cabang 2"] as const;
-
-    const kpiCards = [
-      { label: "Gross Sales", value: "Rp 42.500.000", change: "+12.4%", color: "text-[#2d5b45]" },
-      { label: "Net Sales", value: "Rp 38.620.000", change: "+9.8%", color: "text-[#2d5b45]" },
-      { label: "Total Transaksi", value: "1.248", change: "+6.3%", color: "text-[#2d5b45]" },
-      { label: "AOV", value: "Rp 34.000", change: "+4.1%", color: "text-[#2d5b45]" },
-    ];
-
-    const bestSellerMenu = [
-      { name: "Cappuccino", qty: 142, revenue: "Rp 3.550.000" },
-      { name: "Latte", qty: 126, revenue: "Rp 3.150.000" },
-      { name: "Croissant", qty: 118, revenue: "Rp 2.120.000" },
-      { name: "Green Tea", qty: 104, revenue: "Rp 1.560.000" },
-      { name: "Sandwich", qty: 92, revenue: "Rp 2.760.000" },
-    ];
-
-    const slowMovingMenu = [
-      { name: "Smoothie Bowl", qty: 18, status: "Slow Move" },
-      { name: "Orange Juice", qty: 22, status: "Low Qty" },
-      { name: "Chocolate Cake", qty: 27, status: "Stagnant" },
-    ];
-
-    const paymentBreakdown = [
-      { label: "Tunai", share: 62, amount: "Rp 26.350.000", color: "bg-[#7c4a2d]" },
-      { label: "QRIS", share: 38, amount: "Rp 16.150.000", color: "bg-[#d39b6d]" },
-    ];
-
-    const peakHours = [
-      { label: "09:00", value: 22 },
-      { label: "11:00", value: 62 },
-      { label: "12:00", value: 81 },
-      { label: "13:00", value: 74 },
-      { label: "14:00", value: 58 },
-      { label: "18:00", value: 84 },
-      { label: "19:00", value: 90 },
-      { label: "20:00", value: 72 },
-      { label: "21:00", value: 48 },
-    ];
-
-    const orderTypes = [
-      { label: "Dine-in", value: 54, amount: "Rp 23.000.000" },
-      { label: "Takeaway", value: 28, amount: "Rp 11.900.000" },
-      { label: "Online Delivery", value: 18, amount: "Rp 7.600.000" },
-    ];
-
-    const shiftSummary = [
-      { label: "Kas Awal", value: "Rp 2.500.000" },
-      { label: "Kas Akhir", value: "Rp 2.940.000" },
-      { label: "Petty Cash", value: "Rp 210.000" },
-      { label: "Selisih Kas", value: "Rp 230.000" },
-    ];
-
-    const voidLogs = [
-      { id: "VOID-1045", reason: "Pembatalan pelanggan", time: "09:42", amount: "-Rp 58.000" },
-      { id: "VOID-1189", reason: "Produk tidak sesuai", time: "12:15", amount: "-Rp 85.000" },
-      { id: "VOID-1224", reason: "Kesalahan input kasir", time: "18:08", amount: "-Rp 120.000" },
-    ];
-
-    const promoSummary = [
-      { label: "Total Diskon", value: "Rp 1.940.000" },
-      { label: "Promo Aktif", value: "3 Campaign" },
-      { label: "Void Count", value: "5 kali" },
-      { label: "Refund", value: "Rp 320.000" },
-    ];
-
-    const donutGradient = `conic-gradient(#7c4a2d 0% 62%, #d39b6d 62% 100%)`;
-
-    return (
-      <div className="flex min-h-0 flex-col space-y-5 overflow-y-auto pb-2">
-        <div className="rounded-[24px] border border-[#eddcc3] bg-[#fffaf5] p-4 shadow-[0_12px_24px_rgba(88,63,46,0.04)]">
-          <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-            <div className="flex items-center gap-3">
-              <div className="rounded-full bg-[#f3e9dc] p-2 text-[#5d4235]">
-                <Clock className="h-4 w-4" />
-              </div>
-              <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#8d6d5a]">Header Filter</p>
-                <h3 className="text-lg font-semibold text-[#2b1d18]">Laporan Penjualan</h3>
-              </div>
-            </div>
-
-            <div className="flex flex-wrap gap-2">
-              {rangeOptions.map((option) => (
-                <button
-                  key={option}
-                  type="button"
-                  onClick={() => setReportRange(option)}
-                  className={`rounded-full px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] ${reportRange === option ? "bg-[#7c4a2d] text-white" : "bg-[#f3e7d9] text-[#5d4235]"}`}
-                >
-                  {option}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-            <div className="rounded-2xl bg-[#f8f0e7] p-3">
-              <label className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8d6d5a]">Shift</label>
-              <select
-                value={reportShift}
-                onChange={(event) => setReportShift(event.target.value as typeof reportShift)}
-                className="mt-2 h-10 w-full rounded-xl border border-[#ebdcc7] bg-[#fffaf5] px-3 text-sm text-[#2b1d18] outline-none"
-              >
-                {shiftOptions.map((option) => (
-                  <option key={option} value={option}>{option}</option>
-                ))}
-              </select>
-            </div>
-            <div className="rounded-2xl bg-[#f8f0e7] p-3">
-              <label className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8d6d5a]">Cabang</label>
-              <select
-                value={reportBranch}
-                onChange={(event) => setReportBranch(event.target.value as typeof reportBranch)}
-                className="mt-2 h-10 w-full rounded-xl border border-[#ebdcc7] bg-[#fffaf5] px-3 text-sm text-[#2b1d18] outline-none"
-              >
-                {branchOptions.map((option) => (
-                  <option key={option} value={option}>{option}</option>
-                ))}
-              </select>
-            </div>
-            <div className="rounded-2xl bg-[#f8f0e7] p-3">
-              <label className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8d6d5a]">Tanggal mulai</label>
-              <input
-                type="date"
-                defaultValue="2026-10-01"
-                className="mt-2 h-10 w-full rounded-xl border border-[#ebdcc7] bg-[#fffaf5] px-3 text-sm text-[#2b1d18] outline-none"
-              />
-            </div>
-            <div className="rounded-2xl bg-[#f8f0e7] p-3">
-              <label className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8d6d5a]">Tanggal akhir</label>
-              <input
-                type="date"
-                defaultValue="2026-10-05"
-                className="mt-2 h-10 w-full rounded-xl border border-[#ebdcc7] bg-[#fffaf5] px-3 text-sm text-[#2b1d18] outline-none"
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {kpiCards.map((item) => (
-            <div key={item.label} className="rounded-[24px] border border-[#eddcc3] bg-[#fffaf5] p-4 shadow-[0_12px_24px_rgba(88,63,46,0.04)]">
-              <div className="flex items-center justify-between">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#8d6d5a]">{item.label}</p>
-                <span className={`text-[10px] font-semibold uppercase tracking-[0.12em] ${item.color}`}>{item.change}</span>
-              </div>
-              <p className="mt-3 text-2xl font-semibold text-[#2b1d18]">{item.value}</p>
-            </div>
-          ))}
-        </div>
-
-        <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
-          <div className="rounded-[24px] border border-[#eddcc3] bg-[#fffaf5] p-5 shadow-[0_12px_24px_rgba(88,63,46,0.04)]">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="rounded-full bg-[#f3e9dc] p-2 text-[#5d4235]">
-                  <ChartNoAxesCombined className="h-4 w-4" />
-                </div>
-                <h3 className="text-lg font-semibold text-[#2b1d18]">Best-Seller Menu</h3>
-              </div>
-              <span className="rounded-full bg-[#edf3ef] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#2d5b45]">Top 5</span>
-            </div>
-
-            <div className="mt-5 space-y-3">
-              {bestSellerMenu.map((item, index) => (
-                <div key={item.name} className="rounded-2xl bg-[#f8f0e7] p-3">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#7c4a2d] text-xs font-bold text-white">{index + 1}</span>
-                      <div>
-                        <p className="font-medium text-[#2b1d18]">{item.name}</p>
-                        <p className="text-xs text-[#7d685f]">{item.qty} terjual</p>
-                      </div>
-                    </div>
-                    <span className="font-semibold text-[#2b1d18]">{item.revenue}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="rounded-[24px] border border-[#eddcc3] bg-[#fffaf5] p-5 shadow-[0_12px_24px_rgba(88,63,46,0.04)]">
-            <div className="flex items-center gap-3">
-              <div className="rounded-full bg-[#f3e9dc] p-2 text-[#5d4235]">
-                <TrendingUp className="h-4 w-4" />
-              </div>
-              <h3 className="text-lg font-semibold text-[#2b1d18]">Slow-Moving</h3>
-            </div>
-
-            <div className="mt-5 space-y-3">
-              {slowMovingMenu.map((item) => (
-                <div key={item.name} className="rounded-2xl bg-[#f8f0e7] p-3">
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium text-[#2b1d18]">{item.name}</span>
-                    <span className="rounded-full bg-[#f8d7d7] px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#9b3b34]">{item.status}</span>
-                  </div>
-                  <p className="mt-2 text-sm text-[#7d685f]">{item.qty} item terjual</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        <div className="grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
-          <div className="rounded-[24px] border border-[#eddcc3] bg-[#fffaf5] p-5 shadow-[0_12px_24px_rgba(88,63,46,0.04)]">
-            <div className="flex items-center gap-3">
-              <div className="rounded-full bg-[#f3e9dc] p-2 text-[#5d4235]">
-                <CircleDollarSign className="h-4 w-4" />
-              </div>
-              <h3 className="text-lg font-semibold text-[#2b1d18]">Payment Method Breakdown</h3>
-            </div>
-
-            <div className="mt-6 flex flex-col items-center gap-5 sm:flex-row sm:items-center sm:justify-center">
-              <div className="relative flex h-36 w-36 items-center justify-center rounded-full" style={{ background: donutGradient }}>
-                <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[#fffaf5] text-center">
-                  <div>
-                    <p className="text-[10px] uppercase tracking-[0.14em] text-[#8d6d5a]">Share</p>
-                    <p className="text-lg font-semibold text-[#2b1d18]">62%</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="w-full space-y-3">
-                {paymentBreakdown.map((item) => (
-                  <div key={item.label} className="rounded-2xl bg-[#f8f0e7] p-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className={`h-3 w-3 rounded-full ${item.color}`} />
-                        <span className="font-medium text-[#2b1d18]">{item.label}</span>
-                      </div>
-                      <span className="text-sm font-semibold text-[#2b1d18]">{item.share}%</span>
-                    </div>
-                    <p className="mt-2 text-sm text-[#7d685f]">{item.amount}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <div className="rounded-[24px] border border-[#eddcc3] bg-[#fffaf5] p-5 shadow-[0_12px_24px_rgba(88,63,46,0.04)]">
-            <div className="flex items-center gap-3">
-              <div className="rounded-full bg-[#f3e9dc] p-2 text-[#5d4235]">
-                <BarChart3 className="h-4 w-4" />
-              </div>
-              <h3 className="text-lg font-semibold text-[#2b1d18]">Peak Hours Analysis</h3>
-            </div>
-
-            <div className="mt-6 flex h-44 items-end gap-2">
-              {peakHours.map((hour) => (
-                <div key={hour.label} className="flex flex-1 flex-col items-center gap-2">
-                  <div className="w-full rounded-t-[14px] bg-[linear-gradient(180deg,#d39b6d_0%,#7c4a2d_100%)]" style={{ height: `${hour.value}%` }} />
-                  <span className="text-[10px] font-medium text-[#7d685f]">{hour.label}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        <div className="grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
-          <div className="rounded-[24px] border border-[#eddcc3] bg-[#fffaf5] p-5 shadow-[0_12px_24px_rgba(88,63,46,0.04)]">
-            <div className="flex items-center gap-3">
-              <div className="rounded-full bg-[#f3e9dc] p-2 text-[#5d4235]">
-                <ShoppingCart className="h-4 w-4" />
-              </div>
-              <h3 className="text-lg font-semibold text-[#2b1d18]">Order Type Breakdown</h3>
-            </div>
-
-            <div className="mt-6 space-y-4">
-              {orderTypes.map((item) => (
-                <div key={item.label}>
-                  <div className="mb-2 flex items-center justify-between text-sm text-[#5f493d]">
-                    <span>{item.label}</span>
-                    <span className="font-semibold text-[#2b1d18]">{item.amount}</span>
-                  </div>
-                  <div className="h-2.5 rounded-full bg-[#f1e4d6]">
-                    <div
-                      className="h-2.5 rounded-full bg-[#7c4a2d]"
-                      style={{ width: `${item.value}%` }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="rounded-[24px] border border-[#eddcc3] bg-[#fffaf5] p-5 shadow-[0_12px_24px_rgba(88,63,46,0.04)]">
-            <div className="flex items-center gap-3">
-              <div className="rounded-full bg-[#f3e9dc] p-2 text-[#5d4235]">
-                <CircleDollarSign className="h-4 w-4" />
-              </div>
-              <h3 className="text-lg font-semibold text-[#2b1d18]">Shift & Reconciliation Summary</h3>
-            </div>
-
-            <div className="mt-5 grid gap-3 sm:grid-cols-2">
-              {shiftSummary.map((item) => (
-                <div key={item.label} className="rounded-2xl bg-[#f8f0e7] p-3">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8d6d5a]">{item.label}</p>
-                  <p className="mt-2 text-lg font-semibold text-[#2b1d18]">{item.value}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        <div className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
-          <div className="rounded-[24px] border border-[#eddcc3] bg-[#fffaf5] p-5 shadow-[0_12px_24px_rgba(88,63,46,0.04)]">
-            <div className="flex items-center gap-3">
-              <div className="rounded-full bg-[#f3e9dc] p-2 text-[#5d4235]">
-                <Clock className="h-4 w-4" />
-              </div>
-              <h3 className="text-lg font-semibold text-[#2b1d18]">Void, Refund & Promo Log</h3>
-            </div>
-
-            <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              {promoSummary.map((item) => (
-                <div key={item.label} className="rounded-2xl bg-[#f8f0e7] p-3">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8d6d5a]">{item.label}</p>
-                  <p className="mt-2 text-base font-semibold text-[#2b1d18]">{item.value}</p>
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-5 space-y-3">
-              {voidLogs.map((item) => (
-                <div key={item.id} className="flex items-center justify-between rounded-2xl bg-[#f8f0e7] p-3">
-                  <div>
-                    <p className="font-medium text-[#2b1d18]">{item.id}</p>
-                    <p className="text-xs text-[#7d685f]">{item.reason} • {item.time}</p>
-                  </div>
-                  <span className="font-semibold text-[#9b3b34]">{item.amount}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="rounded-[24px] border border-[#eddcc3] bg-[#fffaf5] p-5 shadow-[0_12px_24px_rgba(88,63,46,0.04)]">
-            <div className="flex items-center gap-3">
-              <div className="rounded-full bg-[#f3e9dc] p-2 text-[#5d4235]">
-                <ShieldCheck className="h-4 w-4" />
-              </div>
-              <h3 className="text-lg font-semibold text-[#2b1d18]">Action Summary</h3>
-            </div>
-
-            <div className="mt-5 space-y-3">
-              <div className="rounded-2xl bg-[#edf3ef] p-3">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#2d5b45]">Promo yang efektif</p>
-                <p className="mt-2 text-lg font-semibold text-[#2b1d18]">Buy 1 Get 1 • 24% uplift</p>
-              </div>
-              <div className="rounded-2xl bg-[#f8f0e7] p-3">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8d6d5a]">Puncak transaksi</p>
-                <p className="mt-2 text-lg font-semibold text-[#2b1d18]">18:00 - 21:00</p>
-              </div>
-              <div className="rounded-2xl bg-[#f8f0e7] p-3">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8d6d5a]">Komposisi pembayaran</p>
-                <p className="mt-2 text-lg font-semibold text-[#2b1d18]">Tunai 62% • QRIS 38%</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  const renderSettingsView = () => {
-    const menuQuery = menuSearch.trim().toLowerCase();
-    const filteredMenuList = products.filter((product) => {
-      if (!menuQuery) return true;
-      return (
-        product.name.toLowerCase().includes(menuQuery) ||
-        product.category.toLowerCase().includes(menuQuery)
-      );
-    });
-
-    const totalPages = Math.max(1, Math.ceil(filteredMenuList.length / 7));
-    const safeSettingsPage = Math.min(settingsPage, totalPages);
-    const paginatedProducts = filteredMenuList.slice((safeSettingsPage - 1) * 7, safeSettingsPage * 7);
-
-    const userQuery = userSearch.trim().toLowerCase();
-    const filteredUsersList = systemUsers.filter((user) => {
-      if (!userQuery) return true;
-      return (
-        user.username.toLowerCase().includes(userQuery) ||
-        user.role.toLowerCase().includes(userQuery) ||
-        user.name.toLowerCase().includes(userQuery)
-      );
-    });
-
-    const userTotalPages = Math.max(1, Math.ceil(filteredUsersList.length / 9));
-    const safeUserPage = Math.min(userPage, userTotalPages);
-    const paginatedUsers = filteredUsersList.slice((safeUserPage - 1) * 9, safeUserPage * 9);
-
-    return (
-      <div className="flex h-full min-h-0 flex-col gap-5 overflow-hidden">
-        <div className="grid h-full min-h-0 gap-5 lg:grid-cols-[1.15fr_0.95fr]">
-          <div className="flex min-h-0 flex-col overflow-hidden rounded-[24px] border border-[#eddcc3] bg-[#fffaf5] p-5 shadow-[0_12px_24px_rgba(88,63,46,0.04)]">
-            <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-center gap-3">
-                <div className="rounded-full bg-[#f3e9dc] p-2 text-[#5d4235]">
-                  <Settings className="h-4 w-4" />
-                </div>
-                <h3 className="text-lg font-semibold text-[#2b1d18]">Kelola Menu</h3>
-              </div>
-              <span className="rounded-full bg-[#edf3ef] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#2d5b45]">
-                {filteredMenuList.length} item
-              </span>
-            </div>
-
-            <div className="mt-4 flex shrink-0 flex-col gap-3 sm:flex-row sm:items-center">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8a6a52]" />
-                <Input
-                  value={menuSearch}
-                  onChange={(event) => {
-                    setMenuSearch(event.target.value);
-                    setSettingsPage(1);
-                  }}
-                  placeholder="Cari menu..."
-                  className="h-11 rounded-2xl border-[#ebdcc7] bg-[#f9f2ea] pl-10 text-[#2b1d18] placeholder:text-[#9a8479]"
-                />
-              </div>
-              <Button
-                type="button"
-                onClick={() => setIsAddMenuOpen(true)}
-                className="h-11 rounded-2xl bg-[#7c4a2d] text-[#fffaf5] hover:bg-[#6d3f2a]"
-              >
-                Tambah Menu
-              </Button>
-            </div>
-
-            <div className="mt-5 min-h-0 flex-1 overflow-hidden">
-              <div className="h-full space-y-3 overflow-y-auto pr-1">
-                {paginatedProducts.length > 0 ? (
-                  paginatedProducts.map((product) => (
-                    <div key={product.id} className="rounded-2xl bg-[#f8f0e7] p-3">
-                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                        <div>
-                          <p className="font-medium text-[#2b1d18]">{product.name}</p>
-                          <p className="text-xs text-[#7d685f]">{product.category} • {product.stock} pcs</p>
-                        </div>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="text-sm font-semibold text-[#2b1d18]">{formatCurrency(product.price)}</span>
-                          <button
-                            type="button"
-                            onClick={() => handleStartEditProduct(product)}
-                            className="rounded-full bg-[#edf3ef] px-2 py-1 text-xs font-semibold text-[#2d5b45]"
-                          >
-                            Edit
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setProductToDeleteId(product.id)}
-                            className="rounded-full bg-[#f8d7d7] px-2 py-1 text-xs font-semibold text-[#9b3b34]"
-                          >
-                            Hapus
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="rounded-2xl bg-[#f8f0e7] p-4 text-sm text-[#7d685f]">Menu tidak ditemukan.</div>
-                )}
-              </div>
-            </div>
-
-            {filteredMenuList.length > 7 && (
-              <div className="mt-5 flex shrink-0 items-center justify-between rounded-2xl bg-[#f8f0e7] p-3">
-                <button
-                  type="button"
-                  onClick={() => setSettingsPage((page) => Math.max(1, page - 1))}
-                  disabled={safeSettingsPage === 1}
-                  className="flex h-9 w-9 items-center justify-center rounded-full bg-[#f3e7d9] text-[#5d4235] disabled:cursor-not-allowed disabled:opacity-50"
-                  aria-label="Halaman sebelumnya"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </button>
-                <span className="text-sm font-medium text-[#4d382f]">Halaman {safeSettingsPage} / {totalPages}</span>
-                <button
-                  type="button"
-                  onClick={() => setSettingsPage((page) => Math.min(totalPages, page + 1))}
-                  disabled={safeSettingsPage === totalPages}
-                  className="flex h-9 w-9 items-center justify-center rounded-full bg-[#7c4a2d] text-[#fffaf5] disabled:cursor-not-allowed disabled:opacity-50"
-                  aria-label="Halaman berikutnya"
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </button>
-              </div>
-            )}
-          </div>
-
-          <div className="flex min-h-0 flex-col overflow-hidden rounded-[24px] border border-[#eddcc3] bg-[#fffaf5] p-5 shadow-[0_12px_24px_rgba(88,63,46,0.04)]">
-            <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-center gap-3">
-                <div className="rounded-full bg-[#f3e9dc] p-2 text-[#5d4235]">
-                  <Users className="h-4 w-4" />
-                </div>
-                <h3 className="text-lg font-semibold text-[#2b1d18]">Kelola Akun</h3>
-              </div>
-              <span className="rounded-full bg-[#edf3ef] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#2d5b45]">
-                {filteredUsersList.length} user
-              </span>
-            </div>
-
-            <div className="mt-4 flex shrink-0 flex-col gap-3 sm:flex-row sm:items-center">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8a6a52]" />
-                <Input
-                  value={userSearch}
-                  onChange={(event) => {
-                    setUserSearch(event.target.value);
-                    setUserPage(1);
-                  }}
-                  placeholder="Cari akun..."
-                  className="h-11 rounded-2xl border-[#ebdcc7] bg-[#f9f2ea] pl-10 text-[#2b1d18] placeholder:text-[#9a8479]"
-                />
-              </div>
-              <Button
-                type="button"
-                onClick={() => setIsAddUserModalOpen(true)}
-                className="h-11 rounded-2xl bg-[#7c4a2d] text-[#fffaf5] hover:bg-[#6d3f2a]"
-              >
-                Tambah Akun
-              </Button>
-            </div>
-
-            <div className="mt-5 min-h-0 flex-1 overflow-hidden rounded-2xl border border-[#ebdcc7] bg-[#f8f0e7]">
-              <div className="h-full max-h-[560px] overflow-y-auto overflow-x-auto">
-                <table className="w-full min-w-[420px] table-fixed text-left text-sm text-[#2b1d18]">
-                  <thead className="sticky top-0 z-10 bg-[#f1e4d6] text-[#5d4235]">
-                    <tr>
-                      <th className="w-[38%] px-4 py-3 text-left font-semibold">Username</th>
-                      <th className="w-[30%] px-4 py-3 text-left font-semibold">Role</th>
-                      <th className="w-[32%] px-4 py-3 text-left font-semibold">Aksi</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {paginatedUsers.length > 0 ? (
-                      paginatedUsers.map((user) => (
-                        <tr key={`${user.role}-${user.username}`} className="border-t border-[#ebdcc7] align-middle">
-                          <td className="px-4 py-3 font-medium align-middle">{user.username}</td>
-                          <td className="px-4 py-3 align-middle">
-                            <span className="inline-flex rounded-full bg-[#edf3ef] px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#2d5b45]">
-                              {user.role}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 align-middle">
-                            <div className="flex flex-wrap gap-2">
-                              <button
-                                type="button"
-                                onClick={() => handleStartEditUser(user)}
-                                className="rounded-full bg-[#edf3ef] px-2 py-1 text-[10px] font-semibold text-[#2d5b45]"
-                              >
-                                Edit
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => setUserDeleteUsername(user.username)}
-                                disabled={user.username === "admin"}
-                                className="rounded-full bg-[#f8d7d7] px-2 py-1 text-[10px] font-semibold text-[#9b3b34] disabled:cursor-not-allowed disabled:opacity-50"
-                              >
-                                Hapus
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan={3} className="px-4 py-4 text-sm text-[#7d685f]">
-                          Akun tidak ditemukan.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-
-              {filteredUsersList.length > 9 && (
-                <div className="flex items-center justify-between border-t border-[#ebdcc7] bg-[#f7efe8] p-3">
-                  <button
-                    type="button"
-                    onClick={() => setUserPage((page) => Math.max(1, page - 1))}
-                    disabled={safeUserPage === 1}
-                    className="flex h-9 w-9 items-center justify-center rounded-full bg-[#f3e7d9] text-[#5d4235] disabled:cursor-not-allowed disabled:opacity-50"
-                    aria-label="Halaman pengguna sebelumnya"
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </button>
-                  <span className="text-sm font-medium text-[#4d382f]">Halaman {safeUserPage} / {userTotalPages}</span>
-                  <button
-                    type="button"
-                    onClick={() => setUserPage((page) => Math.min(userTotalPages, page + 1))}
-                    disabled={safeUserPage === userTotalPages}
-                    className="flex h-9 w-9 items-center justify-center rounded-full bg-[#7c4a2d] text-[#fffaf5] disabled:cursor-not-allowed disabled:opacity-50"
-                    aria-label="Halaman pengguna berikutnya"
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  const renderStockView = () => {
-    const stockCategories = ["Semua", ...Array.from(new Set(products.map((product) => product.category)))];
-    const stockFilteredProducts = [...products]
-      .filter((product) => {
-        const matchesCategory = stockCategory === "Semua" || product.category === stockCategory;
-        const matchesSearch = product.name.toLowerCase().includes(stockSearch.toLowerCase());
-        return matchesCategory && matchesSearch;
-      })
-      .sort((a, b) => a.stock - b.stock);
-
-    const stockTotalPages = Math.max(1, Math.ceil(stockFilteredProducts.length / 6));
-    const safeStockPage = Math.min(stockPage, stockTotalPages);
-    const paginatedStockProducts = stockFilteredProducts.slice((safeStockPage - 1) * 6, safeStockPage * 6);
-
-    return (
-      <div className="flex min-h-0 flex-col space-y-5 overflow-hidden">
-        <div className="grid gap-4 md:grid-cols-3">
-          <div className="rounded-[24px] border border-[#eddcc3] bg-[#fffaf5] p-4 shadow-[0_12px_24px_rgba(88,63,46,0.04)]">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#8d6d5a]">Total Item</p>
-            <p className="mt-2 text-2xl font-semibold text-[#2b1d18]">{products.length}</p>
-          </div>
-          <div className="rounded-[24px] border border-[#eddcc3] bg-[#fffaf5] p-4 shadow-[0_12px_24px_rgba(88,63,46,0.04)]">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#8d6d5a]">Low Stock</p>
-            <p className="mt-2 text-2xl font-semibold text-[#2b1d18]">{products.filter((product) => product.stock <= 10).length}</p>
-          </div>
-          <div className="rounded-[24px] border border-[#eddcc3] bg-[#fffaf5] p-4 shadow-[0_12px_24px_rgba(88,63,46,0.04)]">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#8d6d5a]">Status</p>
-            <p className="mt-2 text-2xl font-semibold text-[#2b1d18]">{products.filter((product) => product.stock <= 10).length === 0 ? "Aman" : "Perlu Tindak"}</p>
-          </div>
-        </div>
-
-        <div className="rounded-[24px] border border-[#eddcc3] bg-[#fffaf5] p-4 sm:p-5 shadow-[0_12px_24px_rgba(88,63,46,0.04)]">
-          <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-            <div className="flex items-center gap-3">
-              <div className="rounded-full bg-[#f3e9dc] p-2 text-[#5d4235]">
-                <ListOrdered className="h-4 w-4" />
-              </div>
-              <h3 className="text-lg font-semibold text-[#2b1d18]">Stok Menu</h3>
-            </div>
-            <Badge className="w-fit rounded-full bg-[#edf3ef] text-[#2d5b45]">{products.filter((product) => product.stock <= 10).length} needs attention</Badge>
-          </div>
-
-          <div className="mt-4 flex flex-col gap-3 lg:flex-row lg:items-center">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8a6a52]" />
-              <Input
-                value={stockSearch}
-                onChange={(event) => {
-                  setStockSearch(event.target.value);
-                  setStockPage(1);
-                }}
-                placeholder="Cari menu stok..."
-                className="h-11 rounded-2xl border-[#ebdcc7] bg-[#f9f2ea] pl-10 text-[#2b1d18] placeholder:text-[#9a8479]"
-              />
-            </div>
-
-            <div className="flex flex-wrap gap-2">
-              {stockCategories.map((category) => (
-                <button
-                  key={category}
-                  type="button"
-                  onClick={() => {
-                    setStockCategory(category);
-                    setStockPage(1);
-                  }}
-                  className={`rounded-full px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] ${stockCategory === category ? "bg-[#7c4a2d] text-white" : "bg-[#f3e7d9] text-[#5d4235]"}`}
-                >
-                  {category}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="mt-5 overflow-hidden rounded-2xl border border-[#ebdcc7] bg-[#f8f0e7]">
-            <div className="max-h-[500px] overflow-y-auto">
-              <div className="grid gap-3 p-3 md:grid-cols-2 xl:grid-cols-3">
-                {paginatedStockProducts.length > 0 ? (
-                  paginatedStockProducts.map((product) => (
-                    <div key={product.id} className="rounded-2xl bg-[#fffaf5] p-3 shadow-[0_8px_16px_rgba(88,63,46,0.03)]">
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <p className="font-medium text-[#2b1d18]">{product.name}</p>
-                          <p className="mt-1 text-xs text-[#7d685f]">{product.category}</p>
-                        </div>
-                        <span className={`rounded-full px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] ${product.stock <= 10 ? "bg-[#f8d7d7] text-[#9b3b34]" : "bg-[#edf3ef] text-[#2d5b45]"}`}>
-                          {product.stock <= 10 ? "Low" : "Good"}
-                        </span>
-                      </div>
-
-                      <div className="mt-4 grid grid-cols-2 gap-2 text-sm text-[#5f493d]">
-                        <div className="rounded-xl bg-[#f8f0e7] p-2">
-                          <p className="text-[10px] uppercase tracking-[0.14em] text-[#8d6d5a]">Stok</p>
-                          <p className="mt-1 font-semibold text-[#2b1d18]">{product.stock} pcs</p>
-                        </div>
-                        <div className="rounded-xl bg-[#f8f0e7] p-2">
-                          <p className="text-[10px] uppercase tracking-[0.14em] text-[#8d6d5a]">Harga</p>
-                          <p className="mt-1 font-semibold text-[#2b1d18]">{formatCurrency(product.price)}</p>
-                        </div>
-                      </div>
-
-                      <div className="mt-4 flex flex-wrap gap-2">
-                        <button
-                          type="button"
-                          onClick={() => handleStartEditProduct(product)}
-                          className="rounded-full bg-[#edf3ef] px-2.5 py-1.5 text-[10px] font-semibold text-[#2d5b45]"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setProductToDeleteId(product.id)}
-                          className="rounded-full bg-[#f8d7d7] px-2.5 py-1.5 text-[10px] font-semibold text-[#9b3b34]"
-                        >
-                          Hapus
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setRestockProductId(product.id);
-                            setRestockQty("10");
-                          }}
-                          className="ml-auto rounded-full bg-[#7c4a2d] px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-white"
-                        >
-                          Restock
-                        </button>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="col-span-full rounded-2xl bg-[#fffaf5] p-4 text-sm text-[#7d685f]">
-                    Menu tidak ditemukan untuk filter dan pencarian saat ini.
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {stockFilteredProducts.length > 6 && (
-            <div className="mt-5 flex items-center justify-between rounded-2xl bg-[#f8f0e7] p-3">
-              <button
-                type="button"
-                onClick={() => setStockPage((page) => Math.max(1, page - 1))}
-                disabled={safeStockPage === 1}
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-[#f3e7d9] text-[#5d4235] disabled:cursor-not-allowed disabled:opacity-50"
-                aria-label="Halaman stok sebelumnya"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </button>
-              <span className="text-sm font-medium text-[#4d382f]">Halaman {safeStockPage} / {stockTotalPages}</span>
-              <button
-                type="button"
-                onClick={() => setStockPage((page) => Math.min(stockTotalPages, page + 1))}
-                disabled={safeStockPage === stockTotalPages}
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-[#7c4a2d] text-[#fffaf5] disabled:cursor-not-allowed disabled:opacity-50"
-                aria-label="Halaman stok berikutnya"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </button>
-            </div>
-          )}
-        </div>
-
-        {restockProductId && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#2b1d18]/40 p-4">
-            <div className="w-full max-w-md rounded-[28px] border border-[#eddcc3] bg-[#fffaf5] p-5 shadow-[0_40px_80px_rgba(43,29,24,0.18)]">
-              <h3 className="text-lg font-semibold text-[#2b1d18]">Restock Supplier</h3>
-
-              <div className="mt-5 space-y-4">
-                <div>
-                  <label className="text-xs font-semibold uppercase tracking-[0.14em] text-[#8d6d5a]">Menu</label>
-                  <p className="mt-2 text-base font-semibold text-[#2b1d18]">
-                    {products.find((product) => product.id === restockProductId)?.name}
-                  </p>
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium text-[#4d382f]">Jumlah restock</label>
-                  <Input
-                    type="number"
-                    min="1"
-                    value={restockQty}
-                    onChange={(event) => setRestockQty(event.target.value)}
-                    className="mt-2 h-11 rounded-2xl border-[#ebdcc7] bg-[#f9f2ea] text-[#2b1d18]"
-                  />
-                </div>
-
-                <Button
-                  type="button"
-                  onClick={() => {
-                    const qty = Number(restockQty);
-                    if (Number.isFinite(qty) && qty > 0) {
-                      handleRestockProduct(restockProductId, qty);
-                      setRestockProductId(null);
-                      setRestockQty("10");
-                    }
-                  }}
-                  className="w-full rounded-2xl bg-[#7c4a2d] text-[#fffaf5] hover:bg-[#6d3f2a]"
-                >
-                  Konfirmasi Restock
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  };
-
   const renderContent = () => {
     if (!auth) return null;
 
     switch (activeView) {
       case "Dashboard":
-        return renderDashboardView();
+        return <DashboardView lowStockProducts={lowStockProducts} />;
       case "Menu":
-        return renderMenuView();
+        return (
+          <MenuView
+            products={products}
+            auth={auth}
+            searchQuery={searchQuery}
+            selectedCategory={selectedCategory}
+            categories={categories}
+            filteredProducts={filteredProducts}
+            onSearchChange={setSearchQuery}
+            onCategoryChange={setSelectedCategory}
+            onAddToCart={addToCart}
+            onStartEditProduct={handleStartEditProduct}
+            onDeleteProduct={setProductToDeleteId}
+          />
+        );
       case "Laporan":
-        return renderReportView();
+        return <ReportView />;
       case "Stok":
-        return renderStockView();
+        return (
+          <StockView
+            products={products}
+            stockSearch={stockSearch}
+            setStockSearch={setStockSearch}
+            stockCategory={stockCategory}
+            setStockCategory={setStockCategory}
+            stockPage={stockPage}
+            setStockPage={setStockPage}
+            formatCurrency={formatCurrency}
+            handleStartEditProduct={handleStartEditProduct}
+            setProductToDeleteId={setProductToDeleteId}
+            setRestockProductId={setRestockProductId}
+            setRestockQty={setRestockQty}
+          />
+        );
       case "Pengaturan":
-        return renderSettingsView();
+        return (
+          <SettingsView
+            products={products}
+            systemUsers={systemUsers}
+            menuSearch={menuSearch}
+            setMenuSearch={setMenuSearch}
+            settingsPage={settingsPage}
+            setSettingsPage={setSettingsPage}
+            userSearch={userSearch}
+            setUserSearch={setUserSearch}
+            userPage={userPage}
+            setUserPage={setUserPage}
+            handleStartEditProduct={handleStartEditProduct}
+            setProductToDeleteId={setProductToDeleteId}
+            handleStartEditUser={handleStartEditUser}
+            setUserDeleteUsername={setUserDeleteUsername}
+            setIsAddMenuOpen={setIsAddMenuOpen}
+            setIsAddUserModalOpen={setIsAddUserModalOpen}
+            formatCurrency={formatCurrency}
+          />
+        );
       default:
-        return renderMenuView();
+        return <DashboardView lowStockProducts={lowStockProducts} />;
     }
   };
 
@@ -1583,14 +436,22 @@ export default function App() {
 
     return (
       <div className={`flex min-h-screen items-center justify-center p-4 sm:p-6 ${shellClass}`}>
-        <div className={`w-full max-w-md rounded-[28px] border p-6 shadow-[0_40px_90px_rgba(70,42,28,0.16)] backdrop-blur-sm ${isDarkMode ? "border-[#2f3747] bg-[#1f2937]/95" : "border-[#ebdcc7] bg-[#fffaf5]/95"}`}>
+        <div
+          className={`w-full max-w-md rounded-[28px] border p-6 shadow-[0_40px_90px_rgba(70,42,28,0.16)] backdrop-blur-sm ${
+            isDarkMode ? "border-[#2f3747] bg-[#1f2937]/95" : "border-[#ebdcc7] bg-[#fffaf5]/95"
+          }`}
+        >
           <div className="flex items-center justify-center gap-3">
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#7c4a2d] text-lg font-bold text-[#fffaf5] shadow-[0_12px_20px_rgba(124,74,45,0.18)]">
               P
             </div>
             <div>
-              <p className={`text-[10px] font-semibold uppercase tracking-[0.22em] ${isDarkMode ? "text-[#d9cab6]" : "text-[#8d6d5a]"}`}>System</p>
-              <h1 className={`mt-1 text-2xl font-semibold ${isDarkMode ? "text-[#f3f4f6]" : "text-[#2b1d18]"}`}>POSLite</h1>
+              <p className={`text-[10px] font-semibold uppercase tracking-[0.22em] ${isDarkMode ? "text-[#d9cab6]" : "text-[#8d6d5a]"}`}>
+                System
+              </p>
+              <h1 className={`mt-1 text-2xl font-semibold ${isDarkMode ? "text-[#f3f4f6]" : "text-[#2b1d18]"}`}>
+                POSLite
+              </h1>
             </div>
           </div>
 
@@ -1663,7 +524,11 @@ export default function App() {
                   key={key}
                   type="button"
                   onClick={() => setActiveView(key)}
-                  className={`flex items-center gap-3 rounded-2xl px-3 py-3 text-left transition-all ${activeView === key ? "bg-[#7c4a2d] text-[#fffaf5] shadow-[0_10px_18px_rgba(124,74,45,0.18)]" : "bg-[#f3e7d9] text-[#5c463b] hover:bg-[#e9d7c2]"}`}
+                  className={`flex items-center gap-3 rounded-2xl px-3 py-3 text-left transition-all ${
+                    activeView === key
+                      ? "bg-[#7c4a2d] text-[#fffaf5] shadow-[0_10px_18px_rgba(124,74,45,0.18)]"
+                      : "bg-[#f3e7d9] text-[#5c463b] hover:bg-[#e9d7c2]"
+                  }`}
                   aria-label={label}
                   title={label}
                 >
@@ -1689,12 +554,20 @@ export default function App() {
             <div className="absolute inset-y-0 right-0 w-56 bg-[radial-gradient(circle,_rgba(124,74,45,0.10),_transparent_65%)]" />
             <div className="relative flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className={`text-[10px] font-semibold uppercase tracking-[0.28em] ${isDarkMode ? "text-[#d9cab6]" : "text-[#8d6d5a]"}`}>Cafe & Resto</p>
-                <h1 className={`mt-1 text-2xl font-semibold ${isDarkMode ? "text-[#f3f4f6]" : "text-[#2b1d18]"}`}>POSLite ESB</h1>
+                <p className={`text-[10px] font-semibold uppercase tracking-[0.28em] ${isDarkMode ? "text-[#d9cab6]" : "text-[#8d6d5a]"}`}>
+                  Cafe & Resto
+                </p>
+                <h1 className={`mt-1 text-2xl font-semibold ${isDarkMode ? "text-[#f3f4f6]" : "text-[#2b1d18]"}`}>
+                  POSLite ESB
+                </h1>
               </div>
 
               <div className="ml-auto flex flex-wrap items-center gap-3">
-                <div className={`flex items-center gap-2 rounded-full px-3 py-2 text-sm font-medium shadow-inner ${isDarkMode ? "bg-[#1f2937] text-[#f3f4f6] shadow-[#0b1220]" : "bg-[#f3e6d9] text-[#534036] shadow-[#f0e2d6]"}`}>
+                <div
+                  className={`flex items-center gap-2 rounded-full px-3 py-2 text-sm font-medium shadow-inner ${
+                    isDarkMode ? "bg-[#1f2937] text-[#f3f4f6] shadow-[#0b1220]" : "bg-[#f3e6d9] text-[#534036] shadow-[#f0e2d6]"
+                  }`}
+                >
                   <Clock className="h-4 w-4" />
                   {currentTime}
                 </div>
@@ -1702,7 +575,9 @@ export default function App() {
                   <button
                     type="button"
                     onClick={() => setIsDarkMode(false)}
-                    className={`flex h-9 w-9 items-center justify-center rounded-full transition ${!isDarkMode ? "bg-[#7c4a2d] text-[#fffaf5] shadow-[0_8px_18px_rgba(124,74,45,0.20)]" : "text-[#5d4337] hover:bg-[#f3e7d9]"}`}
+                    className={`flex h-9 w-9 items-center justify-center rounded-full transition ${
+                      !isDarkMode ? "bg-[#7c4a2d] text-[#fffaf5] shadow-[0_8px_18px_rgba(124,74,45,0.20)]" : "text-[#5d4337] hover:bg-[#f3e7d9]"
+                    }`}
                     aria-label="Light mode"
                     title="Light mode"
                   >
@@ -1711,7 +586,9 @@ export default function App() {
                   <button
                     type="button"
                     onClick={() => setIsDarkMode(true)}
-                    className={`flex h-9 w-9 items-center justify-center rounded-full transition ${isDarkMode ? "bg-[#1f2937] text-[#f3f4f6] shadow-[0_8px_18px_rgba(17,24,39,0.20)]" : "text-[#5d4337] hover:bg-[#f3e7d9]"}`}
+                    className={`flex h-9 w-9 items-center justify-center rounded-full transition ${
+                      isDarkMode ? "bg-[#1f2937] text-[#f3f4f6] shadow-[0_8px_18px_rgba(17,24,39,0.20)]" : "text-[#5d4337] hover:bg-[#f3e7d9]"
+                    }`}
                     aria-label="Dark mode"
                     title="Dark mode"
                   >
@@ -1720,65 +597,9 @@ export default function App() {
                 </div>
               </div>
             </div>
-
           </header>
 
-          <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5 md:p-6">
-            {isCatalogView ? (
-              <>
-                <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center">
-                  <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8a6a52]" />
-                    <Input
-                      placeholder="Cari produk..."
-                      value={searchQuery}
-                      onChange={(event) => setSearchQuery(event.target.value)}
-                      className="h-12 rounded-2xl border-[#ebdcc7] bg-[#f9f2ea] pl-11 text-[#2b1d18] placeholder:text-[#9a8479] focus:ring-[#c98b5b]"
-                    />
-                  </div>
-                </div>
-
-                <Tabs value={selectedCategory} onValueChange={setSelectedCategory}>
-                  <TabsList className="mb-5 h-auto w-full flex-wrap justify-start gap-1.5 rounded-2xl border border-[#ebdcc7] bg-[#f8f0e9] p-1.5">
-                    {categories.map((category) => {
-                      const Icon = categoryMeta[category]?.icon ?? LayoutGrid;
-                      return (
-                        <TabsTrigger
-                          key={category}
-                          value={category}
-                          className="min-w-[90px] flex-1 rounded-xl px-2 py-2 text-[11px] sm:min-w-[100px] sm:px-3 sm:text-sm"
-                        >
-                          <span className="flex items-center justify-center gap-1.5 sm:gap-2">
-                            <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                            <span>{category}</span>
-                          </span>
-                        </TabsTrigger>
-                      );
-                    })}
-                  </TabsList>
-                </Tabs>
-
-                <ScrollArea className="min-h-0 min-w-0 flex-1 h-[260px] sm:h-[320px] xl:h-[calc(100%-240px)]">
-                  <div className="grid min-w-0 grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 xl:grid-cols-4">
-                    {filteredProducts.map((product) => (
-                      <ProductCard
-                        key={product.id}
-                        id={product.id}
-                        name={product.name}
-                        price={product.price}
-                        category={product.category}
-                        stock={product.stock}
-                        disabled={auth?.role === "investor" || product.stock <= 0}
-                        onAdd={() => addToCart(product)}
-                      />
-                    ))}
-                  </div>
-                </ScrollArea>
-              </>
-            ) : (
-              renderContent()
-            )}
-          </div>
+          <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5 md:p-6">{renderContent()}</div>
         </div>
 
         {isCatalogView && (
@@ -1893,7 +714,7 @@ export default function App() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => handleDeleteProduct(productToDeleteId!)}
+                  onClick={() => handleDeleteProduct(productToDeleteId)}
                   className="rounded-2xl bg-[#9b3b34] px-4 py-2.5 text-sm font-medium text-white hover:bg-[#842f2a]"
                 >
                   Hapus Menu
@@ -2217,15 +1038,56 @@ export default function App() {
                 <button
                   type="button"
                   onClick={() => {
-                    if (userDeleteUsername) {
-                      handleDeleteUser(userDeleteUsername);
-                    }
+                    if (userDeleteUsername) handleDeleteUser(userDeleteUsername);
                   }}
                   className="rounded-2xl bg-[#9b3b34] px-4 py-2.5 text-sm font-medium text-white hover:bg-[#842f2a]"
                 >
                   Hapus Akun
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {restockProductId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#2b1d18]/40 p-4">
+          <div className="w-full max-w-md rounded-[28px] border border-[#eddcc3] bg-[#fffaf5] p-5 shadow-[0_40px_80px_rgba(43,29,24,0.18)]">
+            <h3 className="text-lg font-semibold text-[#2b1d18]">Restock Supplier</h3>
+
+            <div className="mt-5 space-y-4">
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-[0.14em] text-[#8d6d5a]">Menu</label>
+                <p className="mt-2 text-base font-semibold text-[#2b1d18]">
+                  {products.find((product) => product.id === restockProductId)?.name}
+                </p>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-[#4d382f]">Jumlah restock</label>
+                <Input
+                  type="number"
+                  min="1"
+                  value={restockQty}
+                  onChange={(event) => setRestockQty(event.target.value)}
+                  className="mt-2 h-11 rounded-2xl border-[#ebdcc7] bg-[#f9f2ea] text-[#2b1d18]"
+                />
+              </div>
+
+              <Button
+                type="button"
+                onClick={() => {
+                  const qty = Number(restockQty);
+                  if (Number.isFinite(qty) && qty > 0) {
+                    handleRestockProduct(restockProductId, qty);
+                    setRestockProductId(null);
+                    setRestockQty("10");
+                  }
+                }}
+                className="w-full rounded-2xl bg-[#7c4a2d] text-[#fffaf5] hover:bg-[#6d3f2a]"
+              >
+                Konfirmasi Restock
+              </Button>
             </div>
           </div>
         </div>

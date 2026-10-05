@@ -1,4 +1,3 @@
-import { Clock, LogOut, Moon, Sun } from "lucide-react";
 import { LoginScreen } from "./components/auth/LoginScreen";
 import {
   DeleteConfirmDialog,

@@ -125,7 +125,7 @@ const ROLE_CONFIG: Record<
       { key: "Menu", label: "Menu", icon: ListOrdered },
       { key: "Stok", label: "Stok", icon: Package },
       { key: "Laporan", label: "Laporan", icon: BarChart3 },
-      { key: "Pengaturan", label: "Pengaturan", icon: Settings },
+      { key: "Pengaturan", label: "Kelola Menu & Akun", icon: Users },
     ],
     accent: "bg-[#f4e6d7] text-[#5d4337]",
     badge: "bg-[#7c4a2d] text-white",

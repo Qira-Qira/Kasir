@@ -1552,13 +1552,6 @@ export default function App() {
           <div className="w-full max-w-md rounded-[28px] border border-[#eddcc3] bg-[#fffaf5] p-5 shadow-[0_40px_80px_rgba(43,29,24,0.18)]">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold text-[#2b1d18]">Hapus Menu</h3>
-              <button
-                type="button"
-                onClick={() => setProductToDeleteId(null)}
-                className="rounded-full bg-[#f3e7d9] px-2.5 py-1 text-xs font-semibold text-[#5d4235]"
-              >
-                Tutup
-              </button>
             </div>
 
             <div className="mt-5 space-y-4">
@@ -1605,13 +1598,6 @@ export default function App() {
                 <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#8d6d5a]">Admin</p>
                 <h3 className="mt-1 text-xl font-semibold text-[#2b1d18]">Tambah Menu Baru</h3>
               </div>
-              <button
-                type="button"
-                onClick={() => setIsAddMenuOpen(false)}
-                className="rounded-full bg-[#f3e7d9] px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] text-[#5d4235]"
-              >
-                Tutup
-              </button>
             </div>
 
             <form onSubmit={handleAddProduct} className="mt-5 grid gap-3 md:grid-cols-2">
@@ -1685,13 +1671,6 @@ export default function App() {
                 <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#8d6d5a]">Admin</p>
                 <h3 className="mt-1 text-xl font-semibold text-[#2b1d18]">Edit Menu</h3>
               </div>
-              <button
-                type="button"
-                onClick={handleCloseEditProduct}
-                className="rounded-full bg-[#f3e7d9] px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] text-[#5d4235]"
-              >
-                Tutup
-              </button>
             </div>
 
             <form
@@ -1771,13 +1750,6 @@ export default function App() {
                 <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#8d6d5a]">Admin</p>
                 <h3 className="mt-1 text-xl font-semibold text-[#2b1d18]">Tambah Akun Baru</h3>
               </div>
-              <button
-                type="button"
-                onClick={() => setIsAddUserModalOpen(false)}
-                className="rounded-full bg-[#f3e7d9] px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] text-[#5d4235]"
-              >
-                Tutup
-              </button>
             </div>
 
             <form onSubmit={handleAddUser} className="mt-5 space-y-4">
@@ -1840,13 +1812,6 @@ export default function App() {
                 <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#8d6d5a]">Admin</p>
                 <h3 className="mt-1 text-xl font-semibold text-[#2b1d18]">Edit Akun</h3>
               </div>
-              <button
-                type="button"
-                onClick={handleCloseEditUser}
-                className="rounded-full bg-[#f3e7d9] px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] text-[#5d4235]"
-              >
-                Tutup
-              </button>
             </div>
 
             <form
@@ -1912,13 +1877,6 @@ export default function App() {
           <div className="w-full max-w-md rounded-[28px] border border-[#eddcc3] bg-[#fffaf5] p-5 shadow-[0_40px_80px_rgba(43,29,24,0.18)]">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold text-[#2b1d18]">Hapus Akun</h3>
-              <button
-                type="button"
-                onClick={() => setUserDeleteUsername(null)}
-                className="rounded-full bg-[#f3e7d9] px-2.5 py-1 text-xs font-semibold text-[#5d4235]"
-              >
-                Tutup
-              </button>
             </div>
 
             <div className="mt-5 space-y-4">

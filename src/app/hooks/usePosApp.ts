@@ -1,5 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { CATEGORIES, MOCK_PRODUCTS, ROLE_CONFIG, USER_ACCOUNTS } from "../constants";
+import {
+  deleteProductFromSupabase,
+  deleteUserFromSupabase,
+  getProductsFromSupabase,
+  getUsersFromSupabase,
+  upsertProductToSupabase,
+  upsertUserToSupabase,
+} from "../lib/supabase-data";
 import type {
   AuthState,
   CartItemType,
@@ -51,6 +59,28 @@ export const usePosApp = () => {
 
   const categories = CATEGORIES;
   const currentTime = getCurrentTime();
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const hydrateData = async () => {
+      const [nextProducts, nextUsers] = await Promise.all([
+        getProductsFromSupabase(),
+        getUsersFromSupabase(),
+      ]);
+
+      if (!isMounted) return;
+
+      setProducts(nextProducts);
+      setSystemUsers(nextUsers);
+    };
+
+    void hydrateData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const roleConfig = auth ? ROLE_CONFIG[auth.role] : ROLE_CONFIG.admin;
   const visibleNavItems = useMemo(() => roleConfig.navItems, [roleConfig]);
@@ -181,17 +211,17 @@ export const usePosApp = () => {
       return;
     }
 
-    setProducts((prev) => [
-      {
-        id: `product-${Date.now()}`,
-        name,
-        price,
-        category: newProduct.category,
-        stock,
-        createdBy: "admin",
-      },
-      ...prev,
-    ]);
+    const productToAdd: Product = {
+      id: `product-${Date.now()}`,
+      name,
+      price,
+      category: newProduct.category,
+      stock,
+      createdBy: "admin",
+    };
+
+    setProducts((prev) => [productToAdd, ...prev]);
+    void upsertProductToSupabase(productToAdd);
 
     setNewProduct({ name: "", price: "", category: "Minuman", stock: "" });
     setIsAddMenuOpen(false);
@@ -199,6 +229,7 @@ export const usePosApp = () => {
 
   const handleDeleteProduct = (id: string) => {
     setProducts((prev) => prev.filter((product) => product.id !== id));
+    void deleteProductFromSupabase(id);
     setProductToDeleteId(null);
     setEditingProductId((prev) => (prev === id ? null : prev));
   };
@@ -227,21 +258,40 @@ export const usePosApp = () => {
       return;
     }
 
+    const updatedProduct: Product = {
+      id,
+      name,
+      price,
+      category: productDraft.category,
+      stock,
+      createdBy: "admin",
+    };
+
     setProducts((prev) =>
       prev.map((product) =>
         product.id === id
-          ? { ...product, name, price, category: productDraft.category, stock, createdBy: product.createdBy ?? "admin" }
+          ? { ...product, ...updatedProduct, createdBy: product.createdBy ?? "admin" }
           : product
       )
     );
 
+    void upsertProductToSupabase(updatedProduct);
     handleCloseEditProduct();
   };
 
   const handleRestockProduct = (id: string, amount = 10) => {
-    setProducts((prev) =>
-      prev.map((product) => (product.id === id ? { ...product, stock: product.stock + amount } : product))
-    );
+    setProducts((prev) => {
+      const nextProducts = prev.map((product) =>
+        product.id === id ? { ...product, stock: product.stock + amount } : product
+      );
+
+      const target = nextProducts.find((product) => product.id === id);
+      if (target) {
+        void upsertProductToSupabase(target);
+      }
+
+      return nextProducts;
+    });
   };
 
   const handleStartEditUser = (user: UserAccount) => {
@@ -260,14 +310,22 @@ export const usePosApp = () => {
 
     if (!username || !password) return;
 
+    const updatedUser: UserAccount = {
+      username,
+      password,
+      role: userDraft.role,
+      name: username,
+    };
+
     setSystemUsers((prev) =>
       prev.map((user) =>
         user.username === currentUsername
-          ? { ...user, name: username, username, password, role: userDraft.role }
+          ? { ...user, ...updatedUser, name: username }
           : user
       )
     );
 
+    void upsertUserToSupabase(updatedUser);
     handleCloseEditUser();
   };
 
@@ -279,14 +337,22 @@ export const usePosApp = () => {
 
     if (!username || !password) return;
 
+    const userToAdd: UserAccount = {
+      name: username,
+      username,
+      password,
+      role: newUser.role,
+    };
+
     setSystemUsers((prev) => {
       if (prev.some((user) => user.username.toLowerCase() === username.toLowerCase())) {
         return prev;
       }
 
-      return [...prev, { name: username, username, password, role: newUser.role }];
+      return [...prev, userToAdd];
     });
 
+    void upsertUserToSupabase(userToAdd);
     setNewUser({ username: "", password: "", role: "kasir" });
     setIsAddUserModalOpen(false);
     setUserPage(1);
@@ -295,6 +361,7 @@ export const usePosApp = () => {
   const handleDeleteUser = (username: string) => {
     if (username === "admin") return;
     setSystemUsers((prev) => prev.filter((user) => user.username !== username));
+    void deleteUserFromSupabase(username);
     setEditingUserUsername((prev) => (prev === username ? null : prev));
     setUserDeleteUsername(null);
   };

@@ -1,5 +1,4 @@
-import { MOCK_PRODUCTS } from "../constants";
-import type { Product } from "../types";
+import { getProductsFromSupabase } from "../lib/supabase-data";
 
 const waitForServer = (ms = 650) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -7,7 +6,7 @@ export async function getServerSideProps(page: "products" | "report") {
   await waitForServer();
 
   if (page === "products") {
-    const products: Product[] = MOCK_PRODUCTS.map((product) => ({ ...product }));
+    const products = await getProductsFromSupabase();
 
     return {
       props: {

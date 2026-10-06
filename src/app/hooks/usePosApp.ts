@@ -20,11 +20,34 @@ import type {
 import { getCurrentTime } from "../utils";
 
 export const usePosApp = () => {
-  const [auth, setAuth] = useState<AuthState | null>(null);
+  const [auth, setAuth] = useState<AuthState | null>(() => {
+    if (typeof window === "undefined") return null;
+
+    try {
+      const storedAuth = window.localStorage.getItem("kasir-auth");
+      return storedAuth ? (JSON.parse(storedAuth) as AuthState) : null;
+    } catch {
+      return null;
+    }
+  });
   const [systemUsers, setSystemUsers] = useState<UserAccount[]>(USER_ACCOUNTS);
-  const [loginForm, setLoginForm] = useState({ username: "admin", password: "admin123" });
+  const [loginForm, setLoginForm] = useState({ username: "", password: "" });
   const [loginError, setLoginError] = useState("");
-  const [activeView, setActiveView] = useState<ViewKey>("Menu");
+  const [activeView, setActiveView] = useState<ViewKey>(() => {
+    if (typeof window === "undefined") return "Menu";
+
+    try {
+      const stored = window.localStorage.getItem("kasir-activeView");
+      const allowed = ["Menu", "Laporan", "Stok", "Dashboard", "Pengaturan"] as const;
+      if (stored && (allowed as readonly string[]).includes(stored)) {
+        return stored as ViewKey;
+      }
+    } catch {
+      // ignore
+    }
+
+    return "Menu";
+  });
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [cart, setCart] = useState<CartItemType[]>([]);
   const [products, setProducts] = useState<Product[]>(MOCK_PRODUCTS);
@@ -59,6 +82,27 @@ export const usePosApp = () => {
 
   const categories = CATEGORIES;
   const currentTime = getCurrentTime();
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    if (auth) {
+      window.localStorage.setItem("kasir-auth", JSON.stringify(auth));
+      return;
+    }
+
+    window.localStorage.removeItem("kasir-auth");
+  }, [auth]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    try {
+      window.localStorage.setItem("kasir-activeView", activeView);
+    } catch {
+      // ignore
+    }
+  }, [activeView]);
 
   useEffect(() => {
     let isMounted = true;

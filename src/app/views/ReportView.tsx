@@ -210,7 +210,7 @@ export function ReportView({ products = [], report, reportRange, setReportRange,
         <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           <div className="rounded-2xl bg-[#f8f0e7] p-3">
             <label className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8d6d5a]">Shift</label>
-            <select value={reportShift} onChange={(e) => setReportShift(e.target.value)} className="mt-2 h-10 w-full rounded-xl border border-[#ebdcc7] bg-[#fffaf5] px-3 text-sm text-[#2b1d18] outline-none">
+            <select value={reportShift} onChange={(e) => setReportShift(e.target.value as ReportShift)} className="mt-2 h-10 w-full rounded-xl border border-[#ebdcc7] bg-[#fffaf5] px-3 text-sm text-[#2b1d18] outline-none">
               {shiftOptions.map((option) => (
                 <option key={option} value={option}>{option}</option>
               ))}
@@ -218,7 +218,7 @@ export function ReportView({ products = [], report, reportRange, setReportRange,
           </div>
           <div className="rounded-2xl bg-[#f8f0e7] p-3">
             <label className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8d6d5a]">Cabang</label>
-            <select value={reportBranch} onChange={(e) => setReportBranch(e.target.value)} className="mt-2 h-10 w-full rounded-xl border border-[#ebdcc7] bg-[#fffaf5] px-3 text-sm text-[#2b1d18] outline-none">
+            <select value={reportBranch} onChange={(e) => setReportBranch(e.target.value as ReportBranch)} className="mt-2 h-10 w-full rounded-xl border border-[#ebdcc7] bg-[#fffaf5] px-3 text-sm text-[#2b1d18] outline-none">
               {branchOptions.map((option) => (
                 <option key={option} value={option}>{option}</option>
               ))}

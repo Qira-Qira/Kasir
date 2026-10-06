@@ -5,6 +5,7 @@ import {
   deleteUserFromSupabase,
   getProductsFromSupabase,
   getUsersFromSupabase,
+  insertTransactionToSupabase,
   upsertProductToSupabase,
   upsertUserToSupabase,
 } from "../lib/supabase-data";
@@ -75,6 +76,26 @@ export const usePosApp = () => {
   const [reportRange, setReportRange] = useState<"Hari Ini" | "7 Hari Terakhir" | "Bulanan" | "Custom Date">("7 Hari Terakhir");
   const [reportShift, setReportShift] = useState<"Semua Shift" | "Shift 1" | "Shift 2">("Semua Shift");
   const [reportBranch, setReportBranch] = useState<"Semua Cabang" | "Cabang Utama" | "Cabang 2">("Semua Cabang");
+  const [reportStartDate, setReportStartDate] = useState<string>(() => {
+    if (typeof window === "undefined") return "";
+    try {
+      const stored = window.localStorage.getItem("kasir-reportStartDate");
+      if (stored) return stored;
+    } catch {}
+    // default to 7 days ago
+    const d = new Date();
+    d.setDate(d.getDate() - 6);
+    return d.toISOString().slice(0, 10);
+  });
+  const [reportEndDate, setReportEndDate] = useState<string>(() => {
+    if (typeof window === "undefined") return "";
+    try {
+      const stored = window.localStorage.getItem("kasir-reportEndDate");
+      if (stored) return stored;
+    } catch {}
+    const d = new Date();
+    return d.toISOString().slice(0, 10);
+  });
   const [stockSearch, setStockSearch] = useState("");
   const [stockCategory, setStockCategory] = useState("Semua");
   const [stockPage, setStockPage] = useState(1);
@@ -103,6 +124,20 @@ export const usePosApp = () => {
       // ignore
     }
   }, [activeView]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      window.localStorage.setItem("kasir-reportStartDate", reportStartDate);
+    } catch {}
+  }, [reportStartDate]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      window.localStorage.setItem("kasir-reportEndDate", reportEndDate);
+    } catch {}
+  }, [reportEndDate]);
 
   useEffect(() => {
     let isMounted = true;
@@ -430,6 +465,7 @@ export const usePosApp = () => {
     };
 
     setTransactions((prev) => [transaction, ...prev]);
+    void insertTransactionToSupabase(transaction);
     setCurrentTransaction(transaction);
     setReceiptDialogOpen(true);
   };
@@ -538,6 +574,10 @@ export const usePosApp = () => {
     setReportShift,
     reportBranch,
     setReportBranch,
+    reportStartDate,
+    setReportStartDate,
+    reportEndDate,
+    setReportEndDate,
     stockSearch,
     setStockSearch,
     stockCategory,

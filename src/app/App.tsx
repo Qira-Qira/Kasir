@@ -86,6 +86,16 @@ export default function App() {
     handleLogin,
     handleLogout,
     setLoginForm,
+    reportRange,
+    setReportRange,
+    reportShift,
+    setReportShift,
+    reportBranch,
+    setReportBranch,
+    reportStartDate,
+    setReportStartDate,
+    reportEndDate,
+    setReportEndDate,
     setActiveView,
     setIsDarkMode,
     setSearchQuery,
@@ -146,16 +156,22 @@ export default function App() {
       };
     }
 
-    if (activeView === "Laporan" && !serverPageStatus.report) {
+    if (activeView === "Laporan") {
       let cancelled = false;
       setPageLoading(true);
 
       const loadReportPage = async () => {
-        const result = await getServerSideProps("report");
+        const filters = {
+          range: reportRange,
+          shift: reportShift,
+          branch: reportBranch,
+          from: reportStartDate,
+          to: reportEndDate,
+        };
+        const result = await getServerSideProps("report", filters);
         if (cancelled) return;
 
         setServerReport(result?.props?.report ?? null);
-        setServerPageStatus((prev) => ({ ...prev, report: true }));
         setPageLoading(false);
       };
 
@@ -166,7 +182,19 @@ export default function App() {
     }
 
     setPageLoading(false);
-  }, [activeView, auth, products, serverPageStatus.menu, serverPageStatus.report, setProducts]);
+  }, [
+    activeView,
+    auth,
+    products,
+    reportRange,
+    reportShift,
+    reportBranch,
+    reportStartDate,
+    reportEndDate,
+    serverPageStatus.menu,
+    serverPageStatus.report,
+    setProducts,
+  ]);
 
   const renderContent = () => {
     if (!auth) return null;
@@ -193,7 +221,21 @@ export default function App() {
           />
         );
       case "Laporan":
-        return <ReportView report={serverReport ?? undefined} />;
+        return (
+          <ReportView
+            report={serverReport ?? undefined}
+            reportRange={reportRange}
+            setReportRange={setReportRange}
+            reportShift={reportShift}
+            setReportShift={setReportShift}
+            reportBranch={reportBranch}
+            setReportBranch={setReportBranch}
+            reportStartDate={reportStartDate}
+            setReportStartDate={setReportStartDate}
+            reportEndDate={reportEndDate}
+            setReportEndDate={setReportEndDate}
+          />
+        );
       case "Stok":
         return (
           <StockView

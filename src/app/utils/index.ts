@@ -8,11 +8,21 @@ export const formatCurrency = (value: number) =>
     maximumFractionDigits: 0,
   }).format(value);
 
-export const getCurrentTime = () =>
-  new Date().toLocaleTimeString("id-ID", {
+export const getCurrentTime = () => {
+  const now = new Date();
+  const dateStr = now.toLocaleDateString("id-ID", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+  const timeStr = now.toLocaleTimeString("id-ID", {
     hour: "2-digit",
     minute: "2-digit",
+    second: "2-digit",
   });
+  return `${dateStr}, ${timeStr}`;
+};
 
 export const getCategoryIcon = (category: string): LucideIcon => {
   const iconMap: Record<string, LucideIcon> = {

@@ -100,9 +100,9 @@ export const usePosApp = () => {
   const [stockCategory, setStockCategory] = useState("Semua");
   const [stockPage, setStockPage] = useState(1);
   const [settingsPage, setSettingsPage] = useState(1);
+  const [currentTime, setCurrentTime] = useState(getCurrentTime());
 
   const categories = CATEGORIES;
-  const currentTime = getCurrentTime();
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -138,6 +138,14 @@ export const usePosApp = () => {
       window.localStorage.setItem("kasir-reportEndDate", reportEndDate);
     } catch {}
   }, [reportEndDate]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(getCurrentTime());
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     let isMounted = true;

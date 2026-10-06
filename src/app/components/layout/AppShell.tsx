@@ -98,12 +98,14 @@ export function AppShell({
 
               <div className="ml-auto flex items-center gap-2 sm:gap-3">
                 <div
-                  className={`flex items-center gap-2 rounded-full px-3 py-2 text-sm font-medium shadow-inner ${
+                  className={`flex items-center gap-2 rounded-full px-3 py-2 text-xs sm:text-sm font-medium shadow-inner whitespace-nowrap ${
                     isDarkMode ? "bg-[#1f2937] text-[#f3f4f6] shadow-[#0b1220]" : "bg-[#f3e6d9] text-[#534036] shadow-[#f0e2d6]"
                   }`}
+                  title={currentTime}
                 >
-                  <Clock className="h-4 w-4" />
-                  {currentTime}
+                  <Clock className="h-4 w-4 flex-shrink-0" />
+                  <span className="hidden sm:inline">{currentTime}</span>
+                  <span className="sm:hidden">{currentTime.split(",")[1]?.trim()}</span>
                 </div>
                 <div className="flex items-center gap-2 rounded-full border border-[#ead8c1] bg-[#fffaf5]/80 p-1.5 shadow-sm">
                   <button

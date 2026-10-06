@@ -126,8 +126,18 @@ export default function App() {
   const [pageLoading, setPageLoading] = useState(false);
   const [serverReport, setServerReport] = useState<
     | {
-        kpiCards?: Array<{ label: string; value: string; change: string }>;
+        kpiCards?: Array<{ label: string; value: string; change: string; color?: string }>;
         bestSellerMenu?: Array<{ name: string; qty: number; revenue: string }>;
+        paymentBreakdown?: Array<{ label: string; share: number; amount: string; color: string }>;
+        transactions?: Array<{
+          id: string;
+          items: Array<{ name: string; quantity: number; price: number; category?: string }>;
+          total: number;
+          paymentMethod: string;
+          amountPaid: number;
+          orderType: string;
+          createdAt: string;
+        }>;
         fetchedAt?: string;
       }
     | null
@@ -223,6 +233,7 @@ export default function App() {
       case "Laporan":
         return (
           <ReportView
+            products={products}
             report={serverReport ?? undefined}
             reportRange={reportRange}
             setReportRange={setReportRange}

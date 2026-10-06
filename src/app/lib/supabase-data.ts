@@ -178,6 +178,15 @@ export async function getReportFromSupabase(filters: { range?: string; shift?: s
     shiftSummary: Array<{ label: string; value: string }>;
     promoSummary: Array<{ label: string; value: string }>;
     voidLogs: Array<{ id: string; reason: string; time: string; amount: string }>;
+    transactions: Array<{
+      id: string;
+      items: Array<{ name: string; quantity: number; price: number; category?: string }>;
+      total: number;
+      paymentMethod: string;
+      amountPaid: number;
+      orderType: string;
+      createdAt: string;
+    }>;
     fetchedAt: string;
   } = {
     kpiCards: [
@@ -234,6 +243,43 @@ export async function getReportFromSupabase(filters: { range?: string; shift?: s
       { id: "VOID-1045", reason: "Pembatalan pelanggan", time: "09:42", amount: "-Rp 58.000" },
       { id: "VOID-1189", reason: "Produk tidak sesuai", time: "12:15", amount: "-Rp 85.000" },
       { id: "VOID-1224", reason: "Kesalahan input kasir", time: "18:08", amount: "-Rp 120.000" },
+    ],
+    transactions: [
+      {
+        id: "TRX-1001",
+        items: [
+          { name: "Cappuccino", quantity: 2, price: 25000, category: "Minuman" },
+          { name: "Croissant", quantity: 1, price: 18000, category: "Snack" },
+        ],
+        total: 68000,
+        paymentMethod: "Tunai",
+        amountPaid: 70000,
+        orderType: "Dine In",
+        createdAt: new Date().toISOString(),
+      },
+      {
+        id: "TRX-1002",
+        items: [
+          { name: "Latte", quantity: 1, price: 28000, category: "Minuman" },
+          { name: "Sandwich", quantity: 2, price: 30000, category: "Makanan" },
+        ],
+        total: 88000,
+        paymentMethod: "QRIS",
+        amountPaid: 88000,
+        orderType: "Takeaway",
+        createdAt: new Date(Date.now() - 1000 * 60 * 60 * 6).toISOString(),
+      },
+      {
+        id: "TRX-1003",
+        items: [
+          { name: "Green Tea", quantity: 3, price: 15000, category: "Minuman" },
+        ],
+        total: 45000,
+        paymentMethod: "Debit",
+        amountPaid: 45000,
+        orderType: "Dine In",
+        createdAt: new Date(Date.now() - 1000 * 60 * 60 * 20).toISOString(),
+      },
     ],
     fetchedAt: new Date().toISOString(),
   };
@@ -381,6 +427,21 @@ export async function getReportFromSupabase(filters: { range?: string; shift?: s
       voidLogs: [
         { id: `VOID-${Date.now()}`.slice(0, 10), reason: "Transaksi dibatalkan", time: new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }), amount: `-Rp ${Math.round(grossSales * 0.01).toLocaleString()}` },
       ],
+      transactions: (transactions ?? []).map((trx) => ({
+        id: String(trx.id ?? "TRX-UNKNOWN"),
+        items: Array.isArray(trx.items)
+          ? trx.items.map((item: any) => ({
+              name: String(item?.name ?? "Unknown"),
+              quantity: Number(item?.quantity ?? 0),
+              price: Number(item?.price ?? 0),
+            }))
+          : [],
+        total: Number(trx.total ?? 0),
+        paymentMethod: String(trx.payment_method ?? "Tunai"),
+        amountPaid: Number(trx.amount_paid ?? trx.total ?? 0),
+        orderType: String(trx.order_type ?? "Dine In"),
+        createdAt: String(trx.created_at ?? new Date().toISOString()),
+      })),
       fetchedAt: new Date().toISOString(),
     };
 

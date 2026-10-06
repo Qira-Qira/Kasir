@@ -1,11 +1,12 @@
 import { BarChart3, ChartNoAxesCombined, CircleDollarSign, Clock, ShoppingCart, TrendingUp, ShieldCheck } from "lucide-react";
-import type { Dispatch, SetStateAction } from "react";
+import { useState, type Dispatch, type SetStateAction } from "react";
 
 type ReportRange = "Hari Ini" | "7 Hari Terakhir" | "Bulanan" | "Custom Date";
 type ReportShift = "Semua Shift" | "Shift 1" | "Shift 2";
 type ReportBranch = "Semua Cabang" | "Cabang Utama" | "Cabang 2";
 
 interface ReportViewProps {
+  products?: Array<{ name: string; category: string }>;
   report?: {
     kpiCards?: Array<{ label: string; value: string; change: string; color?: string }>;
     bestSellerMenu?: Array<{ name: string; qty: number; revenue: string }>;
@@ -16,6 +17,15 @@ interface ReportViewProps {
     shiftSummary?: Array<{ label: string; value: string }>;
     promoSummary?: Array<{ label: string; value: string }>;
     voidLogs?: Array<{ id: string; reason: string; time: string; amount: string }>;
+    transactions?: Array<{
+      id: string;
+      items: Array<{ name: string; quantity: number; price: number; category?: string }>;
+      total: number;
+      paymentMethod: string;
+      amountPaid: number;
+      orderType: string;
+      createdAt: string;
+    }>;
     fetchedAt?: string;
   };
   reportRange: ReportRange;
@@ -30,7 +40,7 @@ interface ReportViewProps {
   setReportEndDate: Dispatch<SetStateAction<string>>;
 }
 
-export function ReportView({ report, reportRange, setReportRange, reportShift, setReportShift, reportBranch, setReportBranch, reportStartDate, setReportStartDate, reportEndDate, setReportEndDate, }: ReportViewProps) {
+export function ReportView({ products = [], report, reportRange, setReportRange, reportShift, setReportShift, reportBranch, setReportBranch, reportStartDate, setReportStartDate, reportEndDate, setReportEndDate, }: ReportViewProps) {
   const rangeOptions = ["Hari Ini", "7 Hari Terakhir", "Bulanan", "Custom Date"] as const;
   const shiftOptions = ["Semua Shift", "Shift 1", "Shift 2"] as const;
   const branchOptions = ["Semua Cabang", "Cabang Utama", "Cabang 2"] as const;
@@ -120,6 +130,54 @@ export function ReportView({ report, reportRange, setReportRange, reportShift, s
         .map((item) => `${item.color} ${item.start}% ${item.end}%`)
         .join(", ")})`
     : "conic-gradient(#e7d7c5 0% 100%)";
+
+  const productCategoryMap = new Map(
+    products.map((product) => [product.name.toLowerCase(), product.category])
+  );
+
+  const transactionItems = (report?.transactions ?? []).map((transaction) => {
+    const categories = transaction.items
+      .map((item) => productCategoryMap.get(item.name.toLowerCase()) || item.category || "Lainnya")
+      .filter(Boolean);
+
+    return {
+      ...transaction,
+      categories,
+    };
+  });
+
+  const categoryOptions = ["Semua Kategori", ...new Set(products.map((item) => item.category).filter(Boolean))];
+
+  const [transactionSearch, setTransactionSearch] = useState("");
+  const [transactionCategory, setTransactionCategory] = useState("Semua Kategori");
+  const [currentPage, setCurrentPage] = useState(1);
+  const transactionsPerPage = 5;
+
+  const filteredTransactions = transactionItems.filter((transaction) => {
+    const haystack = [
+      transaction.id,
+      transaction.paymentMethod,
+      transaction.orderType,
+      transaction.total.toString(),
+      ...transaction.items.map((item) => `${item.name} ${item.quantity} ${item.price}`),
+    ]
+      .join(" ")
+      .toLowerCase();
+
+    const matchesSearch = !transactionSearch || haystack.includes(transactionSearch.toLowerCase());
+    const matchesCategory =
+      transactionCategory === "Semua Kategori" ||
+      transaction.categories.includes(transactionCategory);
+
+    return matchesSearch && matchesCategory;
+  });
+
+  const totalPages = Math.max(1, Math.ceil(filteredTransactions.length / transactionsPerPage));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const paginatedTransactions = filteredTransactions.slice(
+    (safeCurrentPage - 1) * transactionsPerPage,
+    safeCurrentPage * transactionsPerPage,
+  );
 
   return (
     <div className="flex min-h-0 flex-col space-y-5 overflow-y-auto pb-2">
@@ -339,60 +397,131 @@ export function ReportView({ report, reportRange, setReportRange, reportShift, s
         </div>
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
-        <div className="rounded-[24px] border border-[#eddcc3] bg-[#fffaf5] p-5 shadow-[0_12px_24px_rgba(88,63,46,0.04)]">
+      <div className="rounded-[24px] border border-[#eddcc3] bg-[#fffaf5] p-5 shadow-[0_12px_24px_rgba(88,63,46,0.04)]">
+        <div className="flex flex-col gap-3 border-b border-[#f0e1cf] pb-4 xl:flex-row xl:items-center xl:justify-between">
           <div className="flex items-center gap-3">
             <div className="rounded-full bg-[#f3e9dc] p-2 text-[#5d4235]">
-              <Clock className="h-4 w-4" />
+              <ShoppingCart className="h-4 w-4" />
             </div>
-            <h3 className="text-lg font-semibold text-[#2b1d18]">Void, Refund & Promo Log</h3>
+            <h3 className="text-lg font-semibold text-[#2b1d18]">Riwayat Transaksi</h3>
           </div>
 
-          <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            {promoSummary.map((item) => (
-              <div key={item.label} className="rounded-2xl bg-[#f8f0e7] p-3">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8d6d5a]">{item.label}</p>
-                <p className="mt-2 text-base font-semibold text-[#2b1d18]">{item.value}</p>
-              </div>
-            ))}
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <input
+              value={transactionSearch}
+              onChange={(event) => setTransactionSearch(event.target.value)}
+              placeholder="Cari transaksi / item / ID"
+              className="h-10 w-full rounded-xl border border-[#ebdcc7] bg-[#fffaf5] px-3 text-sm text-[#2b1d18] outline-none sm:w-64"
+            />
+            <select
+              value={transactionCategory}
+              onChange={(event) => setTransactionCategory(event.target.value)}
+              className="h-10 rounded-xl border border-[#ebdcc7] bg-[#fffaf5] px-3 text-sm text-[#2b1d18] outline-none"
+            >
+              {categoryOptions.map((option) => (
+                <option key={option} value={option}>{option}</option>
+              ))}
+            </select>
           </div>
+        </div>
 
-          <div className="mt-5 space-y-3">
-            {voidLogs.map((item) => (
-              <div key={item.id} className="flex items-center justify-between rounded-2xl bg-[#f8f0e7] p-3">
-                <div>
-                  <p className="font-medium text-[#2b1d18]">{item.id}</p>
-                  <p className="text-xs text-[#7d685f]">{item.reason} • {item.time}</p>
+        <div className="mt-4">
+          {filteredTransactions.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-[#e5d1b8] bg-[#faf2ea] p-6 text-center text-sm text-[#7d685f]">
+              Tidak ada transaksi yang sesuai dengan filter yang dipilih.
+            </div>
+          ) : (
+            <div className="divide-y divide-[#eadcc0] overflow-hidden rounded-2xl border border-[#eadcc0] bg-[#fffaf5]">
+              {paginatedTransactions.map((transaction) => (
+                <div key={transaction.id} className="bg-[#f8f0e7]/80 p-4 transition-colors hover:bg-[#f4e7d5]">
+                  <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                    <div>
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8d6d5a]">ID Transaksi</p>
+                      <p className="mt-1 text-base font-semibold text-[#2b1d18]">{transaction.id}</p>
+                    </div>
+
+                    <div className="grid w-full gap-2 text-sm text-[#5f493d] sm:grid-cols-3 lg:max-w-[560px]">
+                      <div className="rounded-xl border border-[#eadcc0] bg-[#fffaf5] p-2.5">
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8d6d5a]">Waktu</p>
+                        <p className="mt-1 text-sm font-medium text-[#2b1d18]">
+                          {new Date(transaction.createdAt).toLocaleString("id-ID", { dateStyle: "medium", timeStyle: "short" })}
+                        </p>
+                      </div>
+                      <div className="rounded-xl border border-[#eadcc0] bg-[#fffaf5] p-2.5">
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8d6d5a]">Metode</p>
+                        <p className="mt-1 text-sm font-medium text-[#2b1d18]">{transaction.paymentMethod}</p>
+                      </div>
+                      <div className="rounded-xl border border-[#eadcc0] bg-[#fffaf5] p-2.5">
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8d6d5a]">Jenis</p>
+                        <p className="mt-1 text-sm font-medium text-[#2b1d18]">{transaction.orderType}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex flex-wrap gap-2">
+                      {transaction.items.slice(0, 3).map((item) => (
+                        <span key={`${transaction.id}-${item.name}`} className="rounded-full bg-[#efe3d3] px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#5d4235]">
+                          {item.name} × {item.quantity}
+                        </span>
+                      ))}
+                      {transaction.items.length > 3 && (
+                        <span className="rounded-full bg-[#e9ddd0] px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#5d4235]">
+                          +{transaction.items.length - 3} lagi
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="text-right">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8d6d5a]">Total</p>
+                      <p className="mt-1 text-lg font-semibold text-[#2b1d18]">Rp {transaction.total.toLocaleString("id-ID")}</p>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {transaction.categories.map((category) => (
+                      <span key={`${transaction.id}-${category}`} className="rounded-full bg-[#edf3ef] px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#2d5b45]">
+                        {category}
+                      </span>
+                    ))}
+                  </div>
                 </div>
-                <span className="font-semibold text-[#9b3b34]">{item.amount}</span>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
 
-        <div className="rounded-[24px] border border-[#eddcc3] bg-[#fffaf5] p-5 shadow-[0_12px_24px_rgba(88,63,46,0.04)]">
-          <div className="flex items-center gap-3">
-            <div className="rounded-full bg-[#f3e9dc] p-2 text-[#5d4235]">
-              <ShieldCheck className="h-4 w-4" />
-            </div>
-            <h3 className="text-lg font-semibold text-[#2b1d18]">Action Summary</h3>
-          </div>
+        {filteredTransactions.length > 0 && (
+          <div className="mt-4 flex flex-col gap-3 border-t border-[#eadcc0] pt-4 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-[#5f493d]">
+              Menampilkan {Math.min(filteredTransactions.length, (safeCurrentPage - 1) * transactionsPerPage + 1)}-{Math.min(filteredTransactions.length, safeCurrentPage * transactionsPerPage)} dari {filteredTransactions.length} transaksi
+            </p>
 
-          <div className="mt-5 space-y-3">
-            <div className="rounded-2xl bg-[#edf3ef] p-3">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#2d5b45]">Promo yang efektif</p>
-              <p className="mt-2 text-lg font-semibold text-[#2b1d18]">Buy 1 Get 1 • 24% uplift</p>
-            </div>
-            <div className="rounded-2xl bg-[#f8f0e7] p-3">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8d6d5a]">Puncak transaksi</p>
-              <p className="mt-2 text-lg font-semibold text-[#2b1d18]">18:00 - 21:00</p>
-            </div>
-            <div className="rounded-2xl bg-[#f8f0e7] p-3">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8d6d5a]">Komposisi pembayaran</p>
-              <p className="mt-2 text-lg font-semibold text-[#2b1d18]">Tunai 62% • QRIS 38%</p>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                disabled={safeCurrentPage === 1}
+                className="rounded-xl border border-[#d9b897] bg-[#fffaf5] px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-[#5d4235] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Prev
+              </button>
+
+              <span className="rounded-xl bg-[#f0e8de] px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-[#5d4235]">
+                {safeCurrentPage}/{totalPages}
+              </span>
+
+              <button
+                type="button"
+                onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+                disabled={safeCurrentPage === totalPages}
+                className="rounded-xl border border-[#d9b897] bg-[#fffaf5] px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-[#5d4235] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Next
+              </button>
             </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

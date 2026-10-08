@@ -1,6 +1,7 @@
-import { CheckCircle2, Clock3, Search, ShoppingCart } from "lucide-react";
+import { CheckCircle2, Clock3, Search, ShoppingCart, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../components/ui/dialog";
 import type { Transaction } from "../types";
 
 interface TransactionHistoryViewProps {
@@ -18,6 +19,7 @@ export function TransactionHistoryView({
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const pageSize = 10;
 
   const sortedTransactions = useMemo(
@@ -41,7 +43,14 @@ export function TransactionHistoryView({
         transaction.id,
         transaction.paymentMethod,
         transaction.orderType,
-        transaction.items.map((item) => `${item.name} ${item.quantity}`).join(" "),
+        transaction.items
+          .map((item) => {
+            const addonText = (item.addons ?? [])
+              .map((addon) => `${addon.name}${addon.quantity > 1 ? ` x${addon.quantity}` : ""}`)
+              .join(" ");
+            return `${item.name} ${item.quantity} ${addonText}`;
+          })
+          .join(" "),
       ]
         .join(" ")
         .toLowerCase();
@@ -148,42 +157,50 @@ export function TransactionHistoryView({
                   </div>
                 </div>
 
-                <div className="mt-4 grid gap-3 md:grid-cols-3">
-                  <div className="rounded-xl border border-[#eadcc0] bg-[#fffaf5] p-2.5">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8d6d5a]">Waktu</p>
-                    <div className="mt-1 flex items-center gap-2 text-sm font-medium text-[#2b1d18]">
-                      <Clock3 className="h-3.5 w-3.5 text-[#8d6d5a]" />
-                      {new Date(transaction.date).toLocaleString("id-ID", { dateStyle: "medium", timeStyle: "short" })}
-                    </div>
+                <div className="mt-4 flex items-center justify-between gap-3 rounded-xl border border-[#eadcc0] bg-[#fffaf5] p-3">
+                  <div className="flex items-center gap-2 text-sm font-medium text-[#2b1d18]">
+                    {transaction.isCompleted ? (
+                      <CheckCircle2 className="h-4 w-4 text-[#2d5b45]" />
+                    ) : (
+                      <Clock3 className="h-4 w-4 text-[#8d4c3d]" />
+                    )}
+                    {transaction.isCompleted ? "Sudah dibuat" : "Belum dibuat"}
                   </div>
-
-                  <div className="rounded-xl border border-[#eadcc0] bg-[#fffaf5] p-2.5">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8d6d5a]">Total</p>
-                    <p className="mt-1 text-sm font-semibold text-[#2b1d18]">{formatCurrency(transaction.total)}</p>
-                  </div>
-
-                  <div className="rounded-xl border border-[#eadcc0] bg-[#fffaf5] p-2.5">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8d6d5a]">Status</p>
-                    <div className="mt-1 flex items-center gap-2 text-sm font-medium text-[#2b1d18]">
-                      {transaction.isCompleted ? (
-                        <CheckCircle2 className="h-4 w-4 text-[#2d5b45]" />
-                      ) : (
-                        <Clock3 className="h-4 w-4 text-[#8d4c3d]" />
-                      )}
-                      {transaction.isCompleted ? "Sudah dibuat" : "Belum dibuat"}
-                    </div>
+                  <div className="text-right">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8d6d5a]">Metode</p>
+                    <p className="text-sm font-semibold text-[#2b1d18]">{transaction.paymentMethod}</p>
                   </div>
                 </div>
 
-                <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-                  <div className="flex flex-wrap gap-2">
-                    {transaction.items.map((item) => (
-                      <span key={`${transaction.id}-${item.name}`} className="rounded-full bg-[#efe3d3] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#5d4235]">
-                        {item.name} × {item.quantity}
-                      </span>
-                    ))}
-                  </div>
+                <div className="mt-4 space-y-2">
+                  {transaction.items.map((item) => (
+                    <div key={`${transaction.id}-${item.name}`} className="flex items-center justify-between gap-3 rounded-xl border border-[#eadcc0] bg-[#f8f0e7] px-3 py-2.5">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-base font-semibold text-[#2b1d18]">{item.name}</p>
+                        {item.addons && item.addons.length > 0 && (
+                          <p className="mt-1 text-xs text-[#7d685f]">
+                            {item.addons
+                              .map((addon) => `${addon.name}${addon.quantity > 1 ? ` x${addon.quantity}` : ""}`)
+                              .join(" • ")}
+                          </p>
+                        )}
+                      </div>
 
+                      <span className="rounded-full bg-[#efe3d3] px-2.5 py-1 text-sm font-semibold text-[#5d4235]">
+                        x{item.quantity}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-4 flex flex-wrap items-center justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedTransaction(transaction)}
+                    className="rounded-xl border border-[#d6c1a6] bg-[#fffaf5] px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-[#5d4235]"
+                  >
+                    Lihat Detail
+                  </button>
                   <button
                     type="button"
                     onClick={() => onToggleStatus(transaction.id)}
@@ -199,6 +216,108 @@ export function TransactionHistoryView({
               </div>
             ))}
           </div>
+        )}
+
+        {selectedTransaction && (
+          <Dialog open={Boolean(selectedTransaction)} onOpenChange={(open) => !open && setSelectedTransaction(null)}>
+            <DialogContent className="max-w-2xl rounded-[28px] border border-[#eddcc3] bg-[#fffaf5] p-0 shadow-[0_18px_36px_rgba(88,63,46,0.12)]">
+              <DialogHeader className="flex flex-row items-center justify-between border-b border-[#eadcc0] bg-[#f9f1e7] px-5 py-4">
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#8d6d5a]">Detail transaksi</p>
+                  <DialogTitle className="mt-1 text-xl font-semibold text-[#2b1d18]">{selectedTransaction.id}</DialogTitle>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedTransaction(null)}
+                  className="rounded-full border border-[#e7d7c0] bg-[#fffaf5] p-2 text-[#5d4235] transition hover:bg-[#f5e8d8]"
+                  aria-label="Tutup detail transaksi"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </DialogHeader>
+
+              <div className="space-y-5 p-5">
+                <div className="grid gap-3 md:grid-cols-3">
+                  <div className="rounded-2xl border border-[#eadcc0] bg-[#f8f0e7] p-3">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8d6d5a]">Status</p>
+                    <div className="mt-2 flex items-center gap-2 text-sm font-semibold text-[#2b1d18]">
+                      {selectedTransaction.isCompleted ? (
+                        <CheckCircle2 className="h-4 w-4 text-[#2d5b45]" />
+                      ) : (
+                        <Clock3 className="h-4 w-4 text-[#8d4c3d]" />
+                      )}
+                      {selectedTransaction.isCompleted ? "Sudah dibuat" : "Belum dibuat"}
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border border-[#eadcc0] bg-[#f8f0e7] p-3">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8d6d5a]">Metode</p>
+                    <p className="mt-2 text-sm font-semibold text-[#2b1d18]">{selectedTransaction.paymentMethod}</p>
+                  </div>
+
+                  <div className="rounded-2xl border border-[#eadcc0] bg-[#f8f0e7] p-3">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8d6d5a]">Waktu</p>
+                    <p className="mt-2 text-sm font-semibold text-[#2b1d18]">
+                      {new Date(selectedTransaction.date).toLocaleString("id-ID", { dateStyle: "medium", timeStyle: "short" })}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-[#eadcc0] bg-[#fffaf5] p-4">
+                  <div className="mb-3 flex items-center justify-between">
+                    <p className="text-sm font-semibold uppercase tracking-[0.12em] text-[#5d4235]">Item Pesanan</p>
+                    <span className="rounded-full bg-[#efe3d3] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#5d4235]">
+                      {selectedTransaction.orderType}
+                    </span>
+                  </div>
+
+                  <div className="space-y-3">
+                    {selectedTransaction.items.map((item) => (
+                      <div key={`${selectedTransaction.id}-${item.name}-${item.quantity}`} className="rounded-2xl border border-[#eadcc0] bg-[#f8f0e7] p-3">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="text-base font-semibold text-[#2b1d18]">{item.name}</p>
+                            <p className="text-xs text-[#7d685f]">Qty: {item.quantity}</p>
+                          </div>
+                          <p className="text-sm font-semibold text-[#2b1d18]">{formatCurrency(item.price * item.quantity)}</p>
+                        </div>
+
+                        {item.addons && item.addons.length > 0 && (
+                          <div className="mt-3 space-y-1.5 rounded-xl bg-[#fffaf5] p-2.5">
+                            <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8d6d5a]">Add-on</p>
+                            {item.addons.map((addon) => (
+                              <div key={`${item.name}-${addon.name}-${addon.quantity}`} className="flex items-center justify-between gap-3 text-sm text-[#3d2a23]">
+                                <span>
+                                  {addon.name}
+                                  {addon.quantity > 1 ? ` x${addon.quantity}` : ""}
+                                </span>
+                                <span>{formatCurrency(addon.price * addon.quantity)}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-[#eadcc0] bg-[#f8f0e7] p-4">
+                  <div className="flex items-center justify-between text-sm text-[#5d4235]">
+                    <span>Subtotal</span>
+                    <span>{formatCurrency(selectedTransaction.total)}</span>
+                  </div>
+                  <div className="mt-2 flex items-center justify-between text-sm text-[#5d4235]">
+                    <span>Dibayar</span>
+                    <span>{formatCurrency(selectedTransaction.amountPaid)}</span>
+                  </div>
+                  <div className="mt-2 flex items-center justify-between border-t border-[#eadcc0] pt-2 text-base font-semibold text-[#2b1d18]">
+                    <span>Total</span>
+                    <span>{formatCurrency(selectedTransaction.total)}</span>
+                  </div>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
         )}
 
         {filteredTransactions.length > 0 && (

@@ -1,24 +1,74 @@
 import { MOCK_PRODUCTS, RAW_MATERIALS_STOCK, USER_ACCOUNTS } from "../constants";
-import type { Product, RawMaterialStock, Transaction, UserAccount } from "../types";
+import type { Product, RawMaterialStock, Transaction, TransactionItem, UserAccount } from "../types";
+import { ensureSystemSugarLevelAddons } from "./addons";
 import { hasSupabaseConfig, supabase } from "./supabase";
 
 const fallbackProducts = () => MOCK_PRODUCTS.map((product) => ({ ...product }));
 const fallbackUsers = () => USER_ACCOUNTS.map((user) => ({ ...user }));
 const fallbackRawMaterials = () => RAW_MATERIALS_STOCK.map((material) => ({ ...material }));
 
-const normalizeProduct = (row: Partial<Product> & Record<string, unknown>): Product => ({
-  id: String(row.id ?? crypto.randomUUID()),
-  name: String(row.name ?? ""),
-  price: Number(row.price ?? 0),
-  category: String(row.category ?? "Minuman"),
-  createdBy: (row.created_by ?? row.createdBy ?? "admin") as "admin" | "system" | undefined,
-});
+export const normalizeProduct = (row: Partial<Product> & Record<string, unknown>): Product => {
+  const parseJsonArray = <T>(value: unknown, fallback: T[]): T[] => {
+    if (Array.isArray(value)) return value as T[];
+    if (typeof value === "string") {
+      try {
+        const parsed = JSON.parse(value);
+        return Array.isArray(parsed) ? (parsed as T[]) : fallback;
+      } catch {
+        return fallback;
+      }
+    }
+    return fallback;
+  };
+
+  const category = String(row.category ?? "Minuman");
+  const parsedAddons = parseJsonArray(row.addons ?? [], []).map((item: any) => ({
+    id: String(item?.id ?? crypto.randomUUID()),
+    name: String(item?.name ?? ""),
+    group: String(item?.group ?? "Ekstra"),
+    price: Number(item?.price ?? 0),
+  })).filter((item) => item.name);
+
+  return {
+    id: String(row.id ?? crypto.randomUUID()),
+    name: String(row.name ?? ""),
+    price: Number(row.price ?? 0),
+    category,
+    createdBy: (row.created_by ?? row.createdBy ?? "admin") as "admin" | "system" | undefined,
+    recipe: parseJsonArray(row.recipe ?? [], []).map((item: any) => ({
+      ingredient: String(item?.ingredient ?? ""),
+      gramsPerPortion: Number(item?.gramsPerPortion ?? item?.grams_per_portion ?? 0),
+    })).filter((item) => item.ingredient && item.gramsPerPortion > 0),
+    addons: ensureSystemSugarLevelAddons(category, parsedAddons),
+  };
+};
 
 const normalizeUser = (row: Partial<UserAccount> & Record<string, unknown>): UserAccount => ({
   username: String(row.username ?? ""),
   password: String(row.password ?? ""),
   role: (row.role ?? "kasir") as UserAccount["role"],
   name: String(row.name ?? row.username ?? ""),
+});
+
+export const normalizeTransactionItem = (item: Partial<TransactionItem> & Record<string, unknown>): TransactionItem => ({
+  name: String(item?.name ?? ""),
+  quantity: Number(item?.quantity ?? 0),
+  price: Number(item?.price ?? 0),
+  addons: Array.isArray(item?.addons)
+    ? item.addons
+        .map((addon: any) => {
+          if (typeof addon === "string") {
+            return { name: addon, quantity: 1, price: 0 };
+          }
+
+          return {
+            name: String(addon?.name ?? ""),
+            quantity: Number(addon?.quantity ?? 1),
+            price: Number(addon?.price ?? 0),
+          };
+        })
+        .filter((addon) => addon.name && addon.quantity > 0)
+    : undefined,
 });
 
 const normalizeRawMaterial = (row: Partial<RawMaterialStock> & Record<string, unknown>): RawMaterialStock => ({
@@ -88,6 +138,8 @@ export async function upsertProductToSupabase(product: Product): Promise<Product
     price: product.price,
     category: product.category,
     created_by: product.createdBy ?? "admin",
+    recipe: product.recipe ?? [],
+    addons: product.addons ?? [],
   };
 
   const { data, error } = await supabase.from("products").upsert(payload, { onConflict: "id" }).select().single();
@@ -196,11 +248,7 @@ export async function getTransactionsFromSupabase(): Promise<Transaction[]> {
   return (data ?? []).map((row) => ({
     id: String(row.id ?? crypto.randomUUID()),
     items: Array.isArray(row.items)
-      ? row.items.map((item: any) => ({
-          name: String(item?.name ?? ""),
-          quantity: Number(item?.quantity ?? 0),
-          price: Number(item?.price ?? 0),
-        }))
+      ? row.items.map((item: any) => normalizeTransactionItem(item as Partial<TransactionItem> & Record<string, unknown>))
       : [],
     total: Number(row.total ?? 0),
     paymentMethod: String(row.payment_method ?? "Cash"),
@@ -241,11 +289,7 @@ export async function insertTransactionToSupabase(transaction: Transaction): Pro
   return {
     id: String(data.id ?? transaction.id),
     items: Array.isArray(data.items)
-      ? data.items.map((item: any) => ({
-          name: String(item?.name ?? ""),
-          quantity: Number(item?.quantity ?? 0),
-          price: Number(item?.price ?? 0),
-        }))
+      ? data.items.map((item: any) => normalizeTransactionItem(item as Partial<TransactionItem> & Record<string, unknown>))
       : [...transaction.items],
     total: Number(data.total ?? transaction.total),
     paymentMethod: String(data.payment_method ?? transaction.paymentMethod),

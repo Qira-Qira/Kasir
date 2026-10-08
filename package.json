@@ -6,7 +6,7 @@
   "scripts": {
     "build": "vite build",
     "dev": "vite",
-    "test": "tsx --test src/app/lib/bom.test.ts"
+    "test": "tsx --test src/app/lib/*.test.ts"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",

@@ -1,6 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
-import { CATEGORIES, MOCK_PRODUCTS, RAW_MATERIALS_STOCK, ROLE_CONFIG, USER_ACCOUNTS } from "../constants";
+import {
+  CATEGORIES,
+  DEFAULT_SUGAR_LEVEL_OPTIONS,
+  MOCK_PRODUCTS,
+  RAW_MATERIALS_STOCK,
+  ROLE_CONFIG,
+  USER_ACCOUNTS,
+} from "../constants";
 import { applyBomDeduction, convertKgToGrams, getLowStockIngredients } from "../lib/bom";
+import { getSugarLevelDeductionGrams, resolveSelectedAddons } from "../lib/addons";
 import {
   deleteProductFromSupabase,
   deleteRawMaterialFromSupabase,
@@ -17,6 +25,7 @@ import {
 } from "../lib/supabase-data";
 import type {
   AuthState,
+  AddonOption,
   CartItemType,
   Product,
   RawMaterialStock,
@@ -71,6 +80,7 @@ export const usePosApp = () => {
     price: "",
     category: "Minuman",
     recipe: [{ ingredientName: "", grams: "" }],
+    addons: [{ name: "", group: "Ekstra", price: "" }],
   });
   const [newUser, setNewUser] = useState({ username: "", password: "", role: "kasir" as Role });
   const [productToDeleteId, setProductToDeleteId] = useState<string | null>(null);
@@ -81,6 +91,7 @@ export const usePosApp = () => {
     price: "",
     category: "Minuman",
     recipe: [{ ingredientName: "", grams: "" }],
+    addons: [{ name: "", group: "Ekstra", price: "" }],
   });
   const [editingUserUsername, setEditingUserUsername] = useState<string | null>(null);
   const [userDraft, setUserDraft] = useState({ username: "", password: "", role: "kasir" as Role });
@@ -244,16 +255,64 @@ export const usePosApp = () => {
     [cart]
   );
 
-  const addToCart = (product: Product) => {
+  const addToCart = (product: Product, selectedAddons: AddonOption[] = []) => {
+    const resolvedAddons = resolveSelectedAddons(product, selectedAddons);
+    const addOnTotal = resolvedAddons.reduce((sum, option) => sum + option.price, 0);
+    const lineId = `${product.id}-${resolvedAddons.map((addon) => addon.id).join("-") || "base"}`;
+    const itemName = [product.name, ...resolvedAddons.map((addon) => addon.name)].join(" + ");
+
     setCart((prev) => {
-      const existing = prev.find((item) => item.id === product.id);
+      const existing = prev.find((item) => item.id === lineId);
       if (existing) {
         return prev.map((item) =>
-          item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
+          item.id === lineId ? { ...item, quantity: item.quantity + 1, price: product.price + addOnTotal } : item
         );
       }
-      return [...prev, { ...product, quantity: 1 }];
+
+      return [
+        ...prev,
+        {
+          id: lineId,
+          productId: product.id,
+          name: itemName,
+          price: product.price + addOnTotal,
+          basePrice: product.price,
+          quantity: 1,
+          addOns: resolvedAddons.map((addon) => ({
+            id: addon.id,
+            group: addon.group,
+            name: addon.name,
+            price: addon.price,
+            quantity: 1,
+          })),
+        },
+      ];
     });
+  };
+
+  const adjustAddonQuantity = (itemId: string, addonId: string, delta: number) => {
+    setCart((prev) =>
+      prev.map((item) => {
+        if (item.id !== itemId) return item;
+
+        const nextAddOns = item.addOns
+          .map((addon) => {
+            if (addon.id !== addonId) return addon;
+            const nextQuantity = Math.max(0, addon.quantity + delta);
+            return { ...addon, quantity: nextQuantity };
+          })
+          .filter((addon) => addon.quantity > 0);
+
+        const nextUnitPrice = item.basePrice + nextAddOns.reduce((sum, addon) => sum + addon.price * addon.quantity, 0);
+
+        return {
+          ...item,
+          addOns: nextAddOns,
+          price: nextUnitPrice,
+          name: [item.productId ? products.find((product) => product.id === item.productId)?.name ?? "" : "", ...nextAddOns.map((addon) => addon.name)].join(" + ") || item.name,
+        };
+      })
+    );
   };
 
   const increaseQuantity = (id: string) => {
@@ -263,6 +322,14 @@ export const usePosApp = () => {
     setCart((prev) =>
       prev.map((item) => (item.id === id ? { ...item, quantity: item.quantity + 1 } : item))
     );
+  };
+
+  const increaseAddonQuantity = (itemId: string, addonId: string) => {
+    adjustAddonQuantity(itemId, addonId, 1);
+  };
+
+  const decreaseAddonQuantity = (itemId: string, addonId: string) => {
+    adjustAddonQuantity(itemId, addonId, -1);
   };
 
   const decreaseQuantity = (id: string) => {
@@ -291,12 +358,35 @@ export const usePosApp = () => {
 
     const name = newProduct.name.trim();
     const price = Number(newProduct.price);
+    const category = newProduct.category;
     const recipe = (newProduct.recipe ?? [])
       .filter((entry) => entry.ingredientName.trim() && Number(entry.grams) > 0)
       .map((entry) => ({
         ingredient: entry.ingredientName.trim(),
         gramsPerPortion: Number(entry.grams),
       }));
+
+    const explicitAddons = (newProduct.addons ?? [])
+      .filter((entry) => entry.name.trim() && Number(entry.price) >= 0)
+      .map((entry, index) => ({
+        id: `addon-${Date.now()}-${index}`,
+        name: entry.name.trim(),
+        group: entry.group.trim() || "Ekstra",
+        price: Number(entry.price),
+      }));
+
+    const sugarAddons = category === "Minuman"
+      ? DEFAULT_SUGAR_LEVEL_OPTIONS.map((option) => ({
+          id: `addon-${Date.now()}-${option.id}`,
+          name: option.name,
+          group: option.group,
+          price: option.price,
+        }))
+      : [];
+
+    const addons = category === "Minuman"
+      ? [...sugarAddons, ...explicitAddons.filter((entry) => entry.group !== "Sugar Level")]
+      : explicitAddons;
 
     if (!name || !Number.isFinite(price) || price <= 0) {
       return;
@@ -306,15 +396,22 @@ export const usePosApp = () => {
       id: `product-${Date.now()}`,
       name,
       price,
-      category: newProduct.category,
+      category,
       createdBy: "admin",
       recipe: recipe.length > 0 ? recipe : undefined,
+      addons: addons.length > 0 ? addons : undefined,
     };
 
     setProducts((prev) => [productToAdd, ...prev]);
     void upsertProductToSupabase(productToAdd);
 
-    setNewProduct({ name: "", price: "", category: "Minuman", recipe: [{ ingredientName: "", grams: "" }] });
+    setNewProduct({
+      name: "",
+      price: "",
+      category: "Minuman",
+      recipe: [{ ingredientName: "", grams: "" }],
+      addons: [{ name: "", group: "Ekstra", price: "" }],
+    });
     setIsAddMenuOpen(false);
   };
 
@@ -332,23 +429,55 @@ export const usePosApp = () => {
       price: String(product.price),
       category: product.category,
       recipe: (product.recipe ?? []).map((item) => ({ ingredientName: item.ingredient, grams: String(item.gramsPerPortion) })),
+      addons: (product.addons ?? [])
+        .filter((item) => item.group !== "Sugar Level")
+        .map((item) => ({ name: item.name, group: item.group, price: String(item.price) })),
     });
   };
 
   const handleCloseEditProduct = () => {
     setEditingProductId(null);
-    setProductDraft({ name: "", price: "", category: "Minuman", recipe: [{ ingredientName: "", grams: "" }] });
+    setProductDraft({
+      name: "",
+      price: "",
+      category: "Minuman",
+      recipe: [{ ingredientName: "", grams: "" }],
+      addons: [{ name: "", group: "Ekstra", price: "" }],
+    });
   };
 
   const handleSaveProductEdit = (id: string) => {
     const name = productDraft.name.trim();
     const price = Number(productDraft.price);
+    const category = productDraft.category;
     const recipe = (productDraft.recipe ?? [])
       .filter((entry) => entry.ingredientName.trim() && Number(entry.grams) > 0)
       .map((entry) => ({
         ingredient: entry.ingredientName.trim(),
         gramsPerPortion: Number(entry.grams),
       }));
+
+    const explicitAddons = (productDraft.addons ?? [])
+      .filter((entry) => entry.name.trim() && Number(entry.price) >= 0 && entry.group !== "Sugar Level")
+      .map((entry, index) => ({
+        id: `addon-${id}-${index}`,
+        name: entry.name.trim(),
+        group: entry.group.trim() || "Ekstra",
+        price: Number(entry.price),
+      }));
+
+    const sugarAddons = category === "Minuman"
+      ? DEFAULT_SUGAR_LEVEL_OPTIONS.map((option) => ({
+          id: `addon-${id}-${option.id}`,
+          name: option.name,
+          group: option.group,
+          price: option.price,
+        }))
+      : [];
+
+    const addons = category === "Minuman"
+      ? [...sugarAddons, ...explicitAddons.filter((entry) => entry.group !== "Sugar Level")]
+      : explicitAddons;
 
     if (!name || !Number.isFinite(price) || price <= 0) {
       return;
@@ -358,9 +487,10 @@ export const usePosApp = () => {
       id,
       name,
       price,
-      category: productDraft.category,
+      category,
       createdBy: "admin",
       recipe: recipe.length > 0 ? recipe : undefined,
+      addons: addons.length > 0 ? addons : undefined,
     };
 
     setProducts((prev) =>
@@ -584,10 +714,22 @@ export const usePosApp = () => {
     let nextMaterialStock = [...rawMaterialStock];
 
     for (const cartItem of cart) {
-      const product = products.find((item) => item.id === cartItem.id);
-      if (!product?.recipe || product.recipe.length === 0) continue;
+      const product = products.find((item) => item.id === cartItem.productId);
+      if (product?.recipe && product.recipe.length > 0) {
+        nextMaterialStock = applyBomDeduction(nextMaterialStock, product.recipe, cartItem.quantity);
+      }
 
-      nextMaterialStock = applyBomDeduction(nextMaterialStock, product.recipe, cartItem.quantity);
+      const sugarOption = cartItem.addOns.find((addon) => addon.group === "Sugar Level");
+      if (sugarOption) {
+        const sugarDeduction = getSugarLevelDeductionGrams(sugarOption.name) * cartItem.quantity;
+        const sugarTarget = nextMaterialStock.find(
+          (material) => material.name.toLowerCase().includes("gula") || material.name.toLowerCase().includes("sugar")
+        );
+
+        if (sugarTarget && sugarDeduction > 0) {
+          sugarTarget.stockGrams = Number(Math.max(0, sugarTarget.stockGrams - sugarDeduction).toFixed(2));
+        }
+      }
     }
 
     setRawMaterialStock(nextMaterialStock);
@@ -599,6 +741,11 @@ export const usePosApp = () => {
         name: item.name,
         quantity: item.quantity,
         price: item.price,
+        addons: item.addOns.map((addon) => ({
+          name: addon.name,
+          quantity: addon.quantity,
+          price: addon.price,
+        })),
       })),
       total: totalAmount,
       paymentMethod,
@@ -762,6 +909,8 @@ export const usePosApp = () => {
     addToCart,
     increaseQuantity,
     decreaseQuantity,
+    increaseAddonQuantity,
+    decreaseAddonQuantity,
     removeFromCart,
     clearCart,
     handleAddProduct,

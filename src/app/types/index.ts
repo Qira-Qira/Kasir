@@ -28,6 +28,13 @@ export interface RawMaterialStock {
   unit: RawMaterialUnit;
 }
 
+export interface AddonOption {
+  id: string;
+  name: string;
+  group: string;
+  price: number;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -36,18 +43,43 @@ export interface Product {
   createdBy?: "admin" | "system";
   recipe?: BomRecipeItem[];
   minimumStockThreshold?: number;
+  addons?: AddonOption[];
 }
 
-export interface CartItemType {
+export interface CartAddonItem {
   id: string;
+  group: string;
   name: string;
   price: number;
   quantity: number;
 }
 
+export interface CartItemType {
+  id: string;
+  productId: string;
+  name: string;
+  price: number;
+  basePrice: number;
+  quantity: number;
+  addOns: CartAddonItem[];
+}
+
+export interface TransactionAddonItem {
+  name: string;
+  quantity: number;
+  price: number;
+}
+
+export interface TransactionItem {
+  name: string;
+  quantity: number;
+  price: number;
+  addons?: TransactionAddonItem[];
+}
+
 export interface Transaction {
   id: string;
-  items: { name: string; quantity: number; price: number }[];
+  items: TransactionItem[];
   total: number;
   paymentMethod: string;
   amountPaid: number;

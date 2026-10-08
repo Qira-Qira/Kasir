@@ -69,6 +69,8 @@ export default function App() {
     addToCart,
     increaseQuantity,
     decreaseQuantity,
+    increaseAddonQuantity,
+    decreaseAddonQuantity,
     removeFromCart,
     clearCart,
     handleAddProduct,
@@ -339,6 +341,8 @@ export default function App() {
             totalAmount={totalAmount}
             onIncrease={increaseQuantity}
             onDecrease={decreaseQuantity}
+            onIncreaseAddon={increaseAddonQuantity}
+            onDecreaseAddon={decreaseAddonQuantity}
             onRemove={removeFromCart}
             onClearCart={clearCart}
             onPayNow={() => setPaymentDialogOpen(true)}
@@ -371,6 +375,12 @@ export default function App() {
             formState={newProduct}
             categories={categories}
             rawMaterials={rawMaterialStock}
+            addonGroups={[
+              "Ekstra",
+              "Toping",
+              "Ukuran",
+              ...new Set(products.flatMap((product) => (product.addons ?? []).map((addon) => addon.group).filter((group) => group !== "Sugar Level"))),
+            ]}
             onChange={(field, value) => setNewProduct((prev) => ({ ...prev, [field]: value }))}
             onSubmit={handleAddProduct}
             onClose={() => setIsAddMenuOpen(false)}
@@ -385,6 +395,12 @@ export default function App() {
             formState={productDraft}
             categories={categories}
             rawMaterials={rawMaterialStock}
+            addonGroups={[
+              "Ekstra",
+              "Toping",
+              "Ukuran",
+              ...new Set(products.flatMap((product) => (product.addons ?? []).map((addon) => addon.group).filter((group) => group !== "Sugar Level"))),
+            ]}
             onChange={(field, value) => setProductDraft((prev) => ({ ...prev, [field]: value }))}
             onSubmit={(event) => {
               event.preventDefault();

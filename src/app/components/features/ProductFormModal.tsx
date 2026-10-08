@@ -7,11 +7,18 @@ export type ProductRecipeDraftItem = {
   grams: string;
 };
 
+export type ProductAddonDraftItem = {
+  name: string;
+  group: string;
+  price: string;
+};
+
 export type ProductFormState = {
   name: string;
   price: string;
   category: string;
   recipe: ProductRecipeDraftItem[];
+  addons: ProductAddonDraftItem[];
 };
 
 interface ProductFormModalProps {
@@ -21,7 +28,8 @@ interface ProductFormModalProps {
   formState: ProductFormState;
   categories: readonly string[];
   rawMaterials: Array<{ id: string; name: string }>;
-  onChange: (field: keyof ProductFormState, value: string | ProductRecipeDraftItem[]) => void;
+  addonGroups: string[];
+  onChange: (field: keyof ProductFormState, value: string | ProductRecipeDraftItem[] | ProductAddonDraftItem[]) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onClose: () => void;
 }
@@ -33,6 +41,7 @@ export function ProductFormModal({
   formState,
   categories,
   rawMaterials,
+  addonGroups,
   onChange,
   onSubmit,
   onClose,
@@ -40,6 +49,10 @@ export function ProductFormModal({
   if (!open) return null;
 
   const recipeRows = formState.recipe.length > 0 ? formState.recipe : [{ ingredientName: "", grams: "" }];
+  const addonRows = formState.addons.length > 0 ? formState.addons : [{ name: "", group: "Ekstra", price: "" }];
+  const groupOptions = (addonGroups.length > 0 ? addonGroups : ["Ekstra", "Toping", "Ukuran"]).filter(
+    (group) => group !== "Sugar Level"
+  );
 
   const addRecipeRow = () => {
     onChange("recipe", [
@@ -57,6 +70,21 @@ export function ProductFormModal({
   const removeRecipeRow = (index: number) => {
     const next = recipeRows.filter((_, itemIndex) => itemIndex !== index);
     onChange("recipe", next.length > 0 ? next : [{ ingredientName: "", grams: "" }]);
+  };
+
+  const addAddonRow = () => {
+    onChange("addons", [...addonRows, { name: "", group: "Ekstra", price: "" }]);
+  };
+
+  const updateAddonRow = (index: number, field: keyof ProductAddonDraftItem, value: string) => {
+    const next = [...addonRows];
+    next[index] = { ...next[index], [field]: value };
+    onChange("addons", next);
+  };
+
+  const removeAddonRow = (index: number) => {
+    const next = addonRows.filter((_, itemIndex) => itemIndex !== index);
+    onChange("addons", next.length > 0 ? next : [{ name: "", group: "Ekstra", price: "" }]);
   };
 
   return (
@@ -118,7 +146,7 @@ export function ProductFormModal({
 
             <div className="space-y-3">
               {recipeRows.map((row, index) => (
-                <div key={`${row.ingredientName}-${index}`} className="grid gap-2 md:grid-cols-[1.4fr_1fr_auto] md:items-end">
+                <div key={`recipe-row-${index}`} className="grid gap-2 md:grid-cols-[1.4fr_1fr_auto] md:items-end">
                   <div>
                     <label className="mb-1 block text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8d6d5a]">Bahan</label>
                     <select
@@ -148,6 +176,68 @@ export function ProductFormModal({
                   <button
                     type="button"
                     onClick={() => removeRecipeRow(index)}
+                    className="h-11 rounded-2xl border border-[#e7d4ba] bg-[#fffaf5] px-3 text-xs font-medium text-[#4d382f]"
+                  >
+                    Hapus
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="md:col-span-2 rounded-2xl border border-[#eddcc3] bg-[#f8f0e7] p-3">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <label className="text-sm font-semibold text-[#4d382f]">Add-on produk</label>
+              <button
+                type="button"
+                onClick={addAddonRow}
+                className="rounded-full bg-[#7c4a2d] px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-white"
+              >
+                + Tambah add-on
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              {addonRows.map((row, index) => (
+                <div key={`addon-row-${index}`} className="grid gap-2 md:grid-cols-[1.2fr_1fr_0.8fr_auto] md:items-end">
+                  <div>
+                    <label className="mb-1 block text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8d6d5a]">Nama</label>
+                    <Input
+                      value={row.name}
+                      onChange={(event) => updateAddonRow(index, "name", event.target.value)}
+                      placeholder="Extra Shot"
+                      className="h-11 rounded-2xl border-[#ebdcc7] bg-[#fffaf5] text-[#2b1d18]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-1 block text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8d6d5a]">Kelompok</label>
+                    <select
+                      value={row.group || groupOptions[0]}
+                      onChange={(event) => updateAddonRow(index, "group", event.target.value)}
+                      className="h-11 w-full rounded-2xl border border-[#ebdcc7] bg-[#fffaf5] px-3 text-[#2b1d18] outline-none"
+                    >
+                      {groupOptions.map((group) => (
+                        <option key={group} value={group}>{group}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="mb-1 block text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8d6d5a]">Harga</label>
+                    <Input
+                      type="number"
+                      min="0"
+                      value={row.price}
+                      onChange={(event) => updateAddonRow(index, "price", event.target.value)}
+                      placeholder="5000"
+                      className="h-11 rounded-2xl border-[#ebdcc7] bg-[#fffaf5] text-[#2b1d18]"
+                    />
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => removeAddonRow(index)}
                     className="h-11 rounded-2xl border border-[#e7d4ba] bg-[#fffaf5] px-3 text-xs font-medium text-[#4d382f]"
                   >
                     Hapus

@@ -11,6 +11,8 @@ type CartSidebarProps = {
   totalAmount: number;
   onIncrease: (id: string) => void;
   onDecrease: (id: string) => void;
+  onIncreaseAddon: (itemId: string, addonId: string) => void;
+  onDecreaseAddon: (itemId: string, addonId: string) => void;
   onRemove: (id: string) => void;
   onClearCart: () => void;
   onPayNow: () => void;
@@ -23,6 +25,8 @@ export function CartSidebar({
   totalAmount,
   onIncrease,
   onDecrease,
+  onIncreaseAddon,
+  onDecreaseAddon,
   onRemove,
   onClearCart,
   onPayNow,
@@ -62,9 +66,15 @@ export function CartSidebar({
             {cart.map((item) => (
               <CartItem
                 key={item.id}
-                {...item}
+                id={item.id}
+                name={item.name}
+                price={item.price}
+                quantity={item.quantity}
+                addOns={item.addOns}
                 onIncrease={() => onIncrease(item.id)}
                 onDecrease={() => onDecrease(item.id)}
+                onIncreaseAddon={(addonId) => onIncreaseAddon(item.id, addonId)}
+                onDecreaseAddon={(addonId) => onDecreaseAddon(item.id, addonId)}
                 onRemove={() => onRemove(item.id)}
               />
             ))}

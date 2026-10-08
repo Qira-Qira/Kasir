@@ -1,11 +1,12 @@
 import { Search, LayoutGrid, Coffee, UtensilsCrossed, Cookie, Menu, X } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useState } from "react";
+import { AddonSelectionDialog } from "../components/features/AddonSelectionDialog";
 import { Input } from "../components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "../components/ui/tabs";
 import { ScrollArea } from "../components/ui/scroll-area";
 import { ProductCard } from "../components/ui/ProductCard";
-import type { AuthState, Product } from "../types";
+import type { AddonOption, AuthState, Product } from "../types";
 
 interface MenuViewProps {
   products: Product[];
@@ -16,7 +17,7 @@ interface MenuViewProps {
   filteredProducts: Product[];
   onSearchChange: (value: string) => void;
   onCategoryChange: (value: string) => void;
-  onAddToCart: (product: Product) => void;
+  onAddToCart: (product: Product, selectedAddons?: AddonOption[]) => void;
 }
 
 const categoryMeta: Record<string, { icon: LucideIcon }> = {
@@ -38,6 +39,17 @@ export function MenuView({
   onAddToCart,
 }: MenuViewProps) {
   const [mobileCategoryOpen, setMobileCategoryOpen] = useState(false);
+  const [selectedProductForAddon, setSelectedProductForAddon] = useState<Product | null>(null);
+
+  const handleAddProduct = (product: Product) => {
+    const addonOptions = product.addons ?? [];
+    if (addonOptions.length === 0) {
+      onAddToCart(product);
+      return;
+    }
+
+    setSelectedProductForAddon(product);
+  };
 
   return (
     <div className="flex min-h-0 flex-col space-y-4 overflow-hidden sm:space-y-5">
@@ -135,11 +147,22 @@ export function MenuView({
               price={product.price}
               category={product.category}
               disabled={auth?.role === "investor"}
-              onAdd={() => onAddToCart(product)}
+              onAdd={() => handleAddProduct(product)}
             />
           ))}
         </div>
       </ScrollArea>
+
+      <AddonSelectionDialog
+        open={Boolean(selectedProductForAddon)}
+        product={selectedProductForAddon}
+        onClose={() => setSelectedProductForAddon(null)}
+        onConfirm={(selectedAddons) => {
+          if (!selectedProductForAddon) return;
+          onAddToCart(selectedProductForAddon, selectedAddons);
+          setSelectedProductForAddon(null);
+        }}
+      />
     </div>
   );
 }

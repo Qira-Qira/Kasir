@@ -20,6 +20,7 @@ import { MenuView } from "./views/MenuView";
 import { ReportView } from "./views/ReportView";
 import { SettingsView } from "./views/SettingsView";
 import { StockView } from "./views/StockView";
+import { TransactionHistoryView } from "./views/TransactionHistoryView";
 import { useEffect, useState } from "react";
 
 export default function App() {
@@ -51,6 +52,7 @@ export default function App() {
     paymentDialogOpen,
     receiptDialogOpen,
     currentTransaction,
+    transactions,
     stockSearch,
     stockCategory,
     stockPage,
@@ -85,6 +87,7 @@ export default function App() {
     handleDeleteUser,
     handlePaymentComplete,
     handleNewTransaction,
+    handleToggleTransactionStatus,
     handleLogin,
     handleLogout,
     setLoginForm,
@@ -245,6 +248,14 @@ export default function App() {
             setReportStartDate={setReportStartDate}
             reportEndDate={reportEndDate}
             setReportEndDate={setReportEndDate}
+          />
+        );
+      case "Riwayat":
+        return (
+          <TransactionHistoryView
+            transactions={transactions}
+            onToggleStatus={handleToggleTransactionStatus}
+            formatCurrency={formatCurrency}
           />
         );
       case "Stok":

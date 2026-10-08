@@ -1,7 +1,7 @@
 import type { LucideIcon } from "lucide-react";
 
 export type Role = "admin" | "investor" | "kasir";
-export type ViewKey = "Menu" | "Laporan" | "Stok" | "Dashboard" | "Pengaturan";
+export type ViewKey = "Menu" | "Laporan" | "Riwayat" | "Stok" | "Dashboard" | "Pengaturan";
 export type PaymentMethod = "Cash" | "QRIS" | "Debit" | "Transfer";
 export type OrderType = "Dine In" | "Takeaway";
 export type ReportRange = "Hari Ini" | "7 Hari Terakhir" | "Bulanan" | "Custom Date";
@@ -53,6 +53,7 @@ export interface Transaction {
   amountPaid: number;
   orderType: OrderType;
   date: string;
+  isCompleted: boolean;
 }
 
 export interface NavItem {

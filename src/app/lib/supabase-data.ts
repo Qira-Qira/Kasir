@@ -181,6 +181,36 @@ export async function deleteUserFromSupabase(username: string): Promise<void> {
   }
 }
 
+export async function getTransactionsFromSupabase(): Promise<Transaction[]> {
+  if (!hasSupabaseConfig || !supabase) {
+    return [];
+  }
+
+  const { data, error } = await supabase.from("transactions").select("*").order("created_at", { ascending: false });
+
+  if (error) {
+    console.warn("Supabase transaction fetch failed:", error.message);
+    return [];
+  }
+
+  return (data ?? []).map((row) => ({
+    id: String(row.id ?? crypto.randomUUID()),
+    items: Array.isArray(row.items)
+      ? row.items.map((item: any) => ({
+          name: String(item?.name ?? ""),
+          quantity: Number(item?.quantity ?? 0),
+          price: Number(item?.price ?? 0),
+        }))
+      : [],
+    total: Number(row.total ?? 0),
+    paymentMethod: String(row.payment_method ?? "Cash"),
+    amountPaid: Number(row.amount_paid ?? 0),
+    orderType: (row.order_type ?? "Dine In") as Transaction["orderType"],
+    date: String(row.created_at ?? new Date().toISOString()),
+    isCompleted: Boolean(row.is_completed ?? false),
+  }));
+}
+
 export async function insertTransactionToSupabase(transaction: Transaction): Promise<Transaction | null> {
   if (!hasSupabaseConfig || !supabase) {
     return transaction;
@@ -193,6 +223,7 @@ export async function insertTransactionToSupabase(transaction: Transaction): Pro
     payment_method: transaction.paymentMethod,
     amount_paid: Number(transaction.amountPaid ?? 0),
     order_type: transaction.orderType,
+    is_completed: Boolean(transaction.isCompleted),
     created_at: new Date(transaction.date).toISOString(),
   };
 
@@ -221,7 +252,20 @@ export async function insertTransactionToSupabase(transaction: Transaction): Pro
     amountPaid: Number(data.amount_paid ?? transaction.amountPaid),
     orderType: (data.order_type ?? transaction.orderType) as Transaction["orderType"],
     date: String(data.created_at ?? transaction.date),
+    isCompleted: Boolean(data.is_completed ?? transaction.isCompleted),
   };
+}
+
+export async function updateTransactionStatusInSupabase(transactionId: string, isCompleted: boolean): Promise<void> {
+  if (!hasSupabaseConfig || !supabase) {
+    return;
+  }
+
+  const { error } = await supabase.from("transactions").update({ is_completed: isCompleted }).eq("id", transactionId);
+
+  if (error) {
+    console.warn("Supabase transaction status update failed:", error.message);
+  }
 }
 
 export async function getReportFromSupabase(filters: { range?: string; shift?: string; branch?: string; from?: string; to?: string }) {

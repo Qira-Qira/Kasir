@@ -7,9 +7,11 @@ import {
   deleteUserFromSupabase,
   getProductsFromSupabase,
   getRawMaterialsFromSupabase,
+  getTransactionsFromSupabase,
   getUsersFromSupabase,
   insertTransactionToSupabase,
   upsertProductToSupabase,
+  updateTransactionStatusInSupabase,
   upsertRawMaterialToSupabase,
   upsertUserToSupabase,
 } from "../lib/supabase-data";
@@ -44,7 +46,7 @@ export const usePosApp = () => {
 
     try {
       const stored = window.localStorage.getItem("kasir-activeView");
-      const allowed = ["Menu", "Laporan", "Stok", "Dashboard", "Pengaturan"] as const;
+      const allowed = ["Menu", "Laporan", "Riwayat", "Stok", "Dashboard", "Pengaturan"] as const;
       if (stored && (allowed as readonly string[]).includes(stored)) {
         return stored as ViewKey;
       }
@@ -174,10 +176,11 @@ export const usePosApp = () => {
     let isMounted = true;
 
     const hydrateData = async () => {
-      const [nextProducts, nextUsers, nextRawMaterials] = await Promise.all([
+      const [nextProducts, nextUsers, nextRawMaterials, nextTransactions] = await Promise.all([
         getProductsFromSupabase(),
         getUsersFromSupabase(),
         getRawMaterialsFromSupabase(),
+        getTransactionsFromSupabase(),
       ]);
 
       if (!isMounted) return;
@@ -185,6 +188,7 @@ export const usePosApp = () => {
       setProducts(nextProducts);
       setSystemUsers(nextUsers);
       setRawMaterialStock(nextRawMaterials);
+      setTransactions(nextTransactions);
     };
 
     void hydrateData();
@@ -601,6 +605,7 @@ export const usePosApp = () => {
       amountPaid,
       orderType,
       date: new Date().toISOString(),
+      isCompleted: false,
     };
 
     setTransactions((prev) => [transaction, ...prev]);
@@ -613,6 +618,20 @@ export const usePosApp = () => {
     clearCart();
     setCurrentTransaction(null);
     setReceiptDialogOpen(false);
+  };
+
+  const handleToggleTransactionStatus = (transactionId: string) => {
+    setTransactions((prev) => {
+      const target = prev.find((transaction) => transaction.id === transactionId);
+      if (!target) return prev;
+
+      const nextValue = !target.isCompleted;
+      void updateTransactionStatusInSupabase(transactionId, nextValue);
+
+      return prev.map((transaction) =>
+        transaction.id === transactionId ? { ...transaction, isCompleted: nextValue } : transaction
+      );
+    });
   };
 
   const handleLogin = (event: React.FormEvent<HTMLFormElement>) => {
@@ -763,6 +782,7 @@ export const usePosApp = () => {
     handleDeleteUser,
     handlePaymentComplete,
     handleNewTransaction,
+    handleToggleTransactionStatus,
     handleLogin,
     handleLogout,
   };

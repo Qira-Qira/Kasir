@@ -1,6 +1,7 @@
 import {
   BarChart3,
   BriefcaseBusiness,
+  History,
   ListOrdered,
   Package,
   ShieldCheck,
@@ -62,6 +63,7 @@ export const ROLE_CONFIG: Record<Role, RoleConfig> = {
       { key: "Menu", label: "Menu", icon: ListOrdered },
       { key: "Stok", label: "Stok", icon: Package },
       { key: "Laporan", label: "Laporan", icon: BarChart3 },
+      { key: "Riwayat", label: "Riwayat", icon: History },
       { key: "Pengaturan", label: "Kelola Menu & Akun", icon: Users },
     ],
     accent: "bg-[#f4e6d7] text-[#5d4337]",
@@ -81,6 +83,7 @@ export const ROLE_CONFIG: Record<Role, RoleConfig> = {
     navItems: [
       { key: "Menu", label: "Menu", icon: ListOrdered },
       { key: "Laporan", label: "Laporan", icon: BarChart3 },
+      { key: "Riwayat", label: "Riwayat", icon: History },
     ],
     accent: "bg-[#fbe7df] text-[#8d4c3d]",
     badge: "bg-[#a95d3a] text-white",

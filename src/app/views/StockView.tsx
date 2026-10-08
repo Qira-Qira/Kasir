@@ -46,21 +46,6 @@ export function StockView({
 
   return (
     <div className="flex min-h-0 flex-col space-y-4 overflow-hidden sm:space-y-5">
-      <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
-        <div className="rounded-[20px] border border-[#eddcc3] bg-[#fffaf5] p-4 shadow-[0_12px_24px_rgba(88,63,46,0.04)] sm:rounded-[24px]">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#8d6d5a]">Total Bahan</p>
-          <p className="mt-2 text-xl font-semibold text-[#2b1d18] sm:text-2xl">{rawMaterialStock.length}</p>
-        </div>
-        <div className="rounded-[20px] border border-[#eddcc3] bg-[#fffaf5] p-4 shadow-[0_12px_24px_rgba(88,63,46,0.04)] sm:rounded-[24px]">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#8d6d5a]">Kritis</p>
-          <p className="mt-2 text-xl font-semibold text-[#2b1d18] sm:text-2xl">{totalCritical}</p>
-        </div>
-        <div className="rounded-[20px] border border-[#eddcc3] bg-[#fffaf5] p-4 shadow-[0_12px_24px_rgba(88,63,46,0.04)] sm:rounded-[24px] sm:col-span-2 md:col-span-1">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#8d6d5a]">Status</p>
-          <p className="mt-2 text-xl font-semibold text-[#2b1d18] sm:text-2xl">{totalCritical === 0 ? "Aman" : "Perlu Tindak"}</p>
-        </div>
-      </div>
-
       <div className="rounded-[22px] border border-[#eddcc3] bg-[#fffaf5] p-4 shadow-[0_12px_24px_rgba(88,63,46,0.04)] sm:p-5 sm:rounded-[24px]">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
@@ -168,9 +153,11 @@ export function StockView({
                     <p className="font-medium text-[#2b1d18]">{material.name}</p>
                     <p className="mt-1 text-[11px] text-[#7d685f]">{material.unit === "gram" ? "HPP / gram" : "HPP / ml"}</p>
                   </div>
-                  <span className={`rounded-full px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] ${material.stockGrams <= 0 ? "bg-[#f8d7d7] text-[#9b3b34]" : "bg-[#edf3ef] text-[#2d5b45]"}`}>
-                    {material.stockGrams <= 0 ? "Kosong" : "Aman"}
-                  </span>
+                  {material.stockGrams <= 0 && (
+                    <span className="rounded-full bg-[#f8d7d7] px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#9b3b34]">
+                      Kosong
+                    </span>
+                  )}
                 </div>
 
                 <div className="mt-4 grid grid-cols-2 gap-2 text-sm text-[#5f493d]">

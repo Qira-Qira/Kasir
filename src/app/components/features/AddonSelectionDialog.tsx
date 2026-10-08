@@ -32,10 +32,13 @@ export function AddonSelectionDialog({ open, product, onClose, onConfirm }: Addo
         return normalizeAddonGroupSelection(prev, option);
       }
 
-      const exists = prev.some((item) => item.id === option.id);
-      if (exists) {
-        return prev.filter((item) => item.id !== option.id);
+      const existingIndex = prev.findIndex((item) => item.id === option.id);
+      if (existingIndex >= 0) {
+        const next = [...prev];
+        next.splice(existingIndex, 1);
+        return next;
       }
+
       return [...prev, option];
     });
   };

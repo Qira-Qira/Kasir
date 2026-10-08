@@ -1,7 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { getSugarLevelDeductionGrams, normalizeAddonGroupSelection, resolveSelectedAddons } from "./addons";
+import {
+  buildCartItemLineId,
+  getSugarLevelDeductionGrams,
+  normalizeAddonGroupSelection,
+  resolveSelectedAddons,
+} from "./addons";
 
 test("produk tanpa pilihan add-on tetap dihitung sebagai base item, bukan otomatis menambah semua add-on default", () => {
   const product = {
@@ -16,6 +21,32 @@ test("produk tanpa pilihan add-on tetap dihitung sebagai base item, bukan otomat
   assert.deepEqual(resolveSelectedAddons(product, []), []);
   assert.deepEqual(resolveSelectedAddons(product, undefined), []);
   assert.deepEqual(resolveSelectedAddons(product, [product.addons![0]]), [product.addons![0]]);
+});
+
+test("cart item key stabil walau add-on dipilih dalam urutan berbeda", () => {
+  const first = buildCartItemLineId("indomie", [{ id: "telur" }, { id: "keju" }]);
+  const second = buildCartItemLineId("indomie", [{ id: "keju" }, { id: "telur" }]);
+  const different = buildCartItemLineId("indomie", [{ id: "telur" }]);
+
+  assert.equal(first, second);
+  assert.notEqual(first, different);
+});
+
+test("case 3 indomie dengan telur 0, 2, dan 1 dipisah berdasarkan quantity add-on masing-masing", () => {
+  const base = resolveSelectedAddons(null, [{ id: "telur", name: "Telur", group: "Ekstra", price: 3000 }]);
+  const double = resolveSelectedAddons(null, [
+    { id: "telur", name: "Telur", group: "Ekstra", price: 3000 },
+    { id: "telur", name: "Telur", group: "Ekstra", price: 3000 },
+  ]);
+  const single = resolveSelectedAddons(null, [
+    { id: "telur", name: "Telur", group: "Ekstra", price: 3000 },
+  ]);
+
+  assert.equal(base.length, 1);
+  assert.equal(double[0]?.quantity, 2);
+  assert.equal(single[0]?.quantity, undefined);
+  assert.notEqual(buildCartItemLineId("indomie", double), buildCartItemLineId("indomie", single));
+  assert.notEqual(buildCartItemLineId("indomie", double), buildCartItemLineId("indomie", []));
 });
 
 test("grup Sugar Level hanya boleh memilih satu level gula dan pengurangan stok mengikuti level gula", () => {

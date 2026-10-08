@@ -8,7 +8,7 @@ import {
   USER_ACCOUNTS,
 } from "../constants";
 import { applyBomDeduction, convertKgToGrams, getLowStockIngredients } from "../lib/bom";
-import { getSugarLevelDeductionGrams, resolveSelectedAddons } from "../lib/addons";
+import { buildCartItemLineId, getSugarLevelDeductionGrams, resolveSelectedAddons } from "../lib/addons";
 import {
   deleteProductFromSupabase,
   deleteRawMaterialFromSupabase,
@@ -258,7 +258,7 @@ export const usePosApp = () => {
   const addToCart = (product: Product, selectedAddons: AddonOption[] = []) => {
     const resolvedAddons = resolveSelectedAddons(product, selectedAddons);
     const addOnTotal = resolvedAddons.reduce((sum, option) => sum + option.price, 0);
-    const lineId = `${product.id}-${resolvedAddons.map((addon) => addon.id).join("-") || "base"}`;
+    const lineId = buildCartItemLineId(product.id, resolvedAddons);
     const itemName = [product.name, ...resolvedAddons.map((addon) => addon.name)].join(" + ");
 
     setCart((prev) => {
@@ -291,8 +291,8 @@ export const usePosApp = () => {
   };
 
   const adjustAddonQuantity = (itemId: string, addonId: string, delta: number) => {
-    setCart((prev) =>
-      prev.map((item) => {
+    setCart((prev) => {
+      return prev.map((item) => {
         if (item.id !== itemId) return item;
 
         const nextAddOns = item.addOns
@@ -304,15 +304,18 @@ export const usePosApp = () => {
           .filter((addon) => addon.quantity > 0);
 
         const nextUnitPrice = item.basePrice + nextAddOns.reduce((sum, addon) => sum + addon.price * addon.quantity, 0);
+        const nextLineId = buildCartItemLineId(item.productId, nextAddOns);
+        const productName = products.find((product) => product.id === item.productId)?.name ?? "";
 
         return {
           ...item,
+          id: nextLineId,
           addOns: nextAddOns,
           price: nextUnitPrice,
-          name: [item.productId ? products.find((product) => product.id === item.productId)?.name ?? "" : "", ...nextAddOns.map((addon) => addon.name)].join(" + ") || item.name,
+          name: [productName, ...nextAddOns.map((addon) => addon.name)].join(" + ") || item.name,
         };
-      })
-    );
+      });
+    });
   };
 
   const increaseQuantity = (id: string) => {

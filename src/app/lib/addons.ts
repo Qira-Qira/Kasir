@@ -10,6 +10,18 @@ export function getDefaultSugarLevelOptions(): AddonOption[] {
   return SUGAR_LEVEL_OPTIONS.map((option) => ({ ...option }));
 }
 
+export function buildCartItemLineId(productId: string, addons: Array<{ id: string; quantity?: number }> = []): string {
+  const addonKey = [...addons]
+    .map((addon) => {
+      const qty = Number(addon.quantity ?? 1);
+      return qty > 1 ? `${addon.id}:${qty}` : addon.id;
+    })
+    .filter(Boolean)
+    .sort();
+
+  return addonKey.length > 0 ? `${productId}-${addonKey.join("-")}` : `${productId}-base`;
+}
+
 export function resolveSelectedAddons(
   _product: { addons?: AddonOption[] | null } | null,
   selectedAddons?: AddonOption[] | null
@@ -18,13 +30,27 @@ export function resolveSelectedAddons(
     return [];
   }
 
-  const unique = new Map<string, AddonOption>();
+  const aggregated = new Map<string, AddonOption>();
 
   for (const addon of selectedAddons) {
-    unique.set(addon.id, addon);
+    const key = addon.id;
+    const current = aggregated.get(key);
+    const currentQuantity = current?.quantity ?? 1;
+    const nextQuantity = current ? currentQuantity + 1 : 1;
+
+    if (!current) {
+      aggregated.set(key, { ...addon, ...(nextQuantity > 1 ? { quantity: nextQuantity } : {}) });
+      continue;
+    }
+
+    aggregated.set(key, {
+      ...current,
+      ...(nextQuantity > 1 ? { quantity: nextQuantity } : {}),
+      price: addon.price || current.price,
+    });
   }
 
-  return [...unique.values()];
+  return [...aggregated.values()].sort((a, b) => a.name.localeCompare(b.name));
 }
 
 export function ensureSystemSugarLevelAddons(category: string, addons: AddonOption[] = []): AddonOption[] {

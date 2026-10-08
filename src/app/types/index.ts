@@ -33,6 +33,7 @@ export interface AddonOption {
   name: string;
   group: string;
   price: number;
+  quantity?: number;
 }
 
 export interface Product {

@@ -5,7 +5,6 @@ import {
 import {
   ProductFormModal,
 } from "./components/features/ProductFormModal";
-import { RestockDialog } from "./components/features/RestockDialog";
 import { UserFormModal } from "./components/features/UserFormModal";
 import { AppShell } from "./components/layout/AppShell";
 import { CartSidebar } from "./components/layout/CartSidebar";
@@ -49,8 +48,6 @@ export default function App() {
     editingUserUsername,
     userDraft,
     userPage,
-    restockProductId,
-    restockQty,
     paymentDialogOpen,
     receiptDialogOpen,
     currentTransaction,
@@ -63,6 +60,8 @@ export default function App() {
     visibleNavItems,
     filteredProducts,
     lowStockProducts,
+    lowStockIngredients,
+    rawMaterialStock,
     totalAmount,
     totalItems,
     addToCart,
@@ -75,7 +74,10 @@ export default function App() {
     handleStartEditProduct,
     handleCloseEditProduct,
     handleSaveProductEdit,
-    handleRestockProduct,
+    handleAddRawMaterial,
+    handleUpdateRawMaterial,
+    handleDeleteRawMaterial,
+    handleStartEditRawMaterial,
     handleStartEditUser,
     handleCloseEditUser,
     handleSaveUserEdit,
@@ -110,8 +112,6 @@ export default function App() {
     setProductDraft,
     setUserDraft,
     setUserPage,
-    setRestockProductId,
-    setRestockQty,
     setPaymentDialogOpen,
     setReceiptDialogOpen,
     setStockSearch,
@@ -215,7 +215,7 @@ export default function App() {
 
     switch (activeView) {
       case "Dashboard":
-        return <DashboardView lowStockProducts={lowStockProducts} />;
+        return <DashboardView lowStockProducts={lowStockProducts} lowStockIngredients={lowStockIngredients} />;
       case "Menu":
         return (
           <MenuView
@@ -250,18 +250,22 @@ export default function App() {
       case "Stok":
         return (
           <StockView
-            products={products}
+            rawMaterialStock={rawMaterialStock}
+            rawMaterialDraft={appState.rawMaterialDraft}
+            editingRawMaterialId={appState.editingRawMaterialId}
+            setRawMaterialDraft={appState.setRawMaterialDraft}
+            setEditingRawMaterialId={appState.setEditingRawMaterialId}
+            handleAddRawMaterial={handleAddRawMaterial}
+            handleUpdateRawMaterial={handleUpdateRawMaterial}
+            handleDeleteRawMaterial={handleDeleteRawMaterial}
+            handleStartEditRawMaterial={handleStartEditRawMaterial}
+            handleRestockIngredient={appState.handleRestockIngredient}
             stockSearch={stockSearch}
             setStockSearch={setStockSearch}
-            stockCategory={stockCategory}
             setStockCategory={setStockCategory}
             stockPage={stockPage}
             setStockPage={setStockPage}
             formatCurrency={formatCurrency}
-            handleStartEditProduct={handleStartEditProduct}
-            setProductToDeleteId={setProductToDeleteId}
-            setRestockProductId={setRestockProductId}
-            setRestockQty={setRestockQty}
           />
         );
       case "Pengaturan":
@@ -287,7 +291,7 @@ export default function App() {
           />
         );
       default:
-        return <DashboardView lowStockProducts={lowStockProducts} />;
+        return <DashboardView lowStockProducts={lowStockProducts} lowStockIngredients={lowStockIngredients} />;
     }
   };
 
@@ -340,7 +344,7 @@ export default function App() {
           open={Boolean(productToDeleteId)}
           title="Hapus Menu"
           targetName={products.find((product) => product.id === productToDeleteId)?.name || "Produk"}
-          meta={`${products.find((product) => product.id === productToDeleteId)?.category || "Kategori"} • ${products.find((product) => product.id === productToDeleteId)?.stock || 0} pcs`}
+          meta={`${products.find((product) => product.id === productToDeleteId)?.category || "Kategori"} • ${products.find((product) => product.id === productToDeleteId)?.stock || 0} g`}
           description="Tindakan ini akan menghapus menu dari katalog dan tidak dapat dipilih saat transaksi berikutnya."
           confirmLabel="Hapus Menu"
           onCancel={() => setProductToDeleteId(null)}
@@ -356,6 +360,7 @@ export default function App() {
             submitLabel="Simpan Menu"
             formState={newProduct}
             categories={categories}
+            rawMaterials={rawMaterialStock}
             onChange={(field, value) => setNewProduct((prev) => ({ ...prev, [field]: value }))}
             onSubmit={handleAddProduct}
             onClose={() => setIsAddMenuOpen(false)}
@@ -369,6 +374,7 @@ export default function App() {
             submitLabel="Simpan Perubahan"
             formState={productDraft}
             categories={categories}
+            rawMaterials={rawMaterialStock}
             onChange={(field, value) => setProductDraft((prev) => ({ ...prev, [field]: value }))}
             onSubmit={(event) => {
               event.preventDefault();
@@ -413,24 +419,6 @@ export default function App() {
           onCancel={() => setUserDeleteUsername(null)}
           onConfirm={() => {
             if (userDeleteUsername) handleDeleteUser(userDeleteUsername);
-          }}
-        />
-
-        <RestockDialog
-          open={Boolean(restockProductId)}
-          productName={products.find((product) => product.id === restockProductId)?.name}
-          restockQty={restockQty}
-          onQtyChange={setRestockQty}
-          onConfirm={(qty) => {
-            if (restockProductId) {
-              handleRestockProduct(restockProductId, qty);
-              setRestockProductId(null);
-              setRestockQty("10");
-            }
-          }}
-          onClose={() => {
-            setRestockProductId(null);
-            setRestockQty("10");
           }}
         />
 

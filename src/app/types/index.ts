@@ -8,6 +8,24 @@ export type ReportRange = "Hari Ini" | "7 Hari Terakhir" | "Bulanan" | "Custom D
 export type ReportShift = "Semua Shift" | "Shift 1" | "Shift 2";
 export type ReportBranch = "Semua Cabang" | "Cabang Utama" | "Cabang 2";
 
+export interface BomRecipeItem {
+  ingredient: string;
+  gramsPerPortion: number;
+}
+
+export interface ProductRecipeDraftItem {
+  ingredientName: string;
+  grams: string;
+}
+
+export interface RawMaterialStock {
+  id: string;
+  name: string;
+  stockGrams: number;
+  minimumStockGrams: number;
+  unit: "gram";
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -15,6 +33,8 @@ export interface Product {
   category: string;
   stock: number;
   createdBy?: "admin" | "system";
+  recipe?: BomRecipeItem[];
+  minimumStockThreshold?: number;
 }
 
 export interface CartItemType {

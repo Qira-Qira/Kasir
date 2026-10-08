@@ -32,7 +32,7 @@ export function RestockDialog({
           </div>
 
           <div>
-            <label className="text-sm font-medium text-[#4d382f]">Jumlah restock</label>
+            <label className="text-sm font-medium text-[#4d382f]">Jumlah restock (gram)</label>
             <Input
               type="number"
               min="1"

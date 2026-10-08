@@ -104,7 +104,7 @@ export function SettingsView({
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                       <div>
                         <p className="font-medium text-[#2b1d18]">{product.name}</p>
-                        <p className="text-xs text-[#7d685f]">{product.category} • {product.stock} pcs</p>
+                        <p className="text-xs text-[#7d685f]">{product.category}</p>
                       </div>
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="text-sm font-semibold text-[#2b1d18]">{formatCurrency(product.price)}</span>

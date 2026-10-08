@@ -7,7 +7,13 @@ import {
   TrendingUp,
   Users,
 } from "lucide-react";
-import type { Product, UserAccount, RoleConfig, Role } from "../types";
+import type { Product, RawMaterialStock, UserAccount, RoleConfig, Role } from "../types";
+
+export const RAW_MATERIALS_STOCK: RawMaterialStock[] = [
+  { id: "raw-bubuk-kopi", name: "Bubuk Kopi", stockGrams: 5000, minimumStockGrams: 300, unit: "gram" },
+  { id: "raw-susu", name: "Susu", stockGrams: 2500, minimumStockGrams: 500, unit: "gram" },
+  { id: "raw-gula-aren", name: "Gula Aren", stockGrams: 2000, minimumStockGrams: 250, unit: "gram" },
+];
 
 export const MOCK_PRODUCTS: Product[] = [
   { id: "1", name: "Espresso", price: 15000, category: "Minuman", stock: 24, createdBy: "admin" },
@@ -22,6 +28,20 @@ export const MOCK_PRODUCTS: Product[] = [
   { id: "10", name: "Sandwich", price: 30000, category: "Makanan", stock: 8, createdBy: "admin" },
   { id: "11", name: "Smoothie Bowl", price: 38000, category: "Makanan", stock: 6, createdBy: "admin" },
   { id: "12", name: "Orange Juice", price: 18000, category: "Minuman", stock: 13, createdBy: "admin" },
+  {
+    id: "13",
+    name: "Es Kopi Aren",
+    price: 22000,
+    category: "Minuman",
+    stock: 10,
+    createdBy: "admin",
+    minimumStockThreshold: 2,
+    recipe: [
+      { ingredient: "Bubuk Kopi", gramsPerPortion: 18 },
+      { ingredient: "Susu", gramsPerPortion: 120 },
+      { ingredient: "Gula Aren", gramsPerPortion: 20 },
+    ],
+  },
 ];
 
 export const USER_ACCOUNTS: UserAccount[] = [

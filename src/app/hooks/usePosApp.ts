@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { CATEGORIES, MOCK_PRODUCTS, ROLE_CONFIG, USER_ACCOUNTS } from "../constants";
+import { CATEGORIES, MOCK_PRODUCTS, RAW_MATERIALS_STOCK, ROLE_CONFIG, USER_ACCOUNTS } from "../constants";
+import { applyBomDeduction, convertKgToGrams, getLowStockIngredients } from "../lib/bom";
 import {
   deleteProductFromSupabase,
   deleteUserFromSupabase,
@@ -13,6 +14,7 @@ import type {
   AuthState,
   CartItemType,
   Product,
+  RawMaterialStock,
   Role,
   Transaction,
   UserAccount,
@@ -52,23 +54,36 @@ export const usePosApp = () => {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [cart, setCart] = useState<CartItemType[]>([]);
   const [products, setProducts] = useState<Product[]>(MOCK_PRODUCTS);
+  const [rawMaterialStock, setRawMaterialStock] = useState<RawMaterialStock[]>(RAW_MATERIALS_STOCK);
   const [selectedCategory, setSelectedCategory] = useState("Semua");
   const [searchQuery, setSearchQuery] = useState("");
   const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
   const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
   const [menuSearch, setMenuSearch] = useState("");
   const [userSearch, setUserSearch] = useState("");
-  const [newProduct, setNewProduct] = useState({ name: "", price: "", category: "Minuman", stock: "" });
+  const [newProduct, setNewProduct] = useState({
+    name: "",
+    price: "",
+    category: "Minuman",
+    recipe: [{ ingredientName: "", grams: "" }],
+  });
   const [newUser, setNewUser] = useState({ username: "", password: "", role: "kasir" as Role });
   const [productToDeleteId, setProductToDeleteId] = useState<string | null>(null);
   const [userDeleteUsername, setUserDeleteUsername] = useState<string | null>(null);
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
-  const [productDraft, setProductDraft] = useState({ name: "", price: "", category: "Minuman", stock: "" });
+  const [productDraft, setProductDraft] = useState({
+    name: "",
+    price: "",
+    category: "Minuman",
+    recipe: [{ ingredientName: "", grams: "" }],
+  });
   const [editingUserUsername, setEditingUserUsername] = useState<string | null>(null);
   const [userDraft, setUserDraft] = useState({ username: "", password: "", role: "kasir" as Role });
   const [userPage, setUserPage] = useState(1);
   const [restockProductId, setRestockProductId] = useState<string | null>(null);
   const [restockQty, setRestockQty] = useState("10");
+  const [rawMaterialDraft, setRawMaterialDraft] = useState({ name: "", stockGrams: "", minimumStockGrams: "" });
+  const [editingRawMaterialId, setEditingRawMaterialId] = useState<string | null>(null);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [receiptDialogOpen, setReceiptDialogOpen] = useState(false);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -198,9 +213,11 @@ export const usePosApp = () => {
     });
   }, [accessibleProducts, searchQuery, selectedCategory]);
 
-  const lowStockProducts = useMemo(
-    () => accessibleProducts.filter((product) => product.stock <= 10).slice(0, 3),
-    [accessibleProducts]
+  const lowStockProducts = useMemo(() => [], [accessibleProducts]);
+
+  const lowStockIngredients = useMemo(
+    () => getLowStockIngredients(rawMaterialStock),
+    [rawMaterialStock]
   );
 
   const totalAmount = useMemo(
@@ -214,12 +231,6 @@ export const usePosApp = () => {
   );
 
   const addToCart = (product: Product) => {
-    if (product.stock <= 0) return;
-
-    setProducts((prev) =>
-      prev.map((item) => (item.id === product.id ? { ...item, stock: Math.max(0, item.stock - 1) } : item))
-    );
-
     setCart((prev) => {
       const existing = prev.find((item) => item.id === product.id);
       if (existing) {
@@ -233,13 +244,7 @@ export const usePosApp = () => {
 
   const increaseQuantity = (id: string) => {
     const target = cart.find((item) => item.id === id);
-    const product = products.find((item) => item.id === id);
-
-    if (!target || !product || product.stock <= 0) return;
-
-    setProducts((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, stock: Math.max(0, item.stock - 1) } : item))
-    );
+    if (!target) return;
 
     setCart((prev) =>
       prev.map((item) => (item.id === id ? { ...item, quantity: item.quantity + 1 } : item))
@@ -249,10 +254,6 @@ export const usePosApp = () => {
   const decreaseQuantity = (id: string) => {
     const target = cart.find((item) => item.id === id);
     if (!target) return;
-
-    setProducts((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, stock: item.stock + 1 } : item))
-    );
 
     setCart((prev) =>
       prev
@@ -264,26 +265,10 @@ export const usePosApp = () => {
   };
 
   const removeFromCart = (id: string) => {
-    const itemToRemove = cart.find((item) => item.id === id);
-    if (!itemToRemove) return;
-
-    setProducts((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, stock: item.stock + itemToRemove.quantity } : item))
-    );
-
     setCart((prev) => prev.filter((item) => item.id !== id));
   };
 
   const clearCart = () => {
-    if (cart.length === 0) return;
-
-    setProducts((prev) =>
-      prev.map((productItem) => {
-        const cartItem = cart.find((item) => item.id === productItem.id);
-        return cartItem ? { ...productItem, stock: productItem.stock + cartItem.quantity } : productItem;
-      })
-    );
-
     setCart([]);
   };
 
@@ -292,9 +277,14 @@ export const usePosApp = () => {
 
     const name = newProduct.name.trim();
     const price = Number(newProduct.price);
-    const stock = Number(newProduct.stock);
+    const recipe = (newProduct.recipe ?? [])
+      .filter((entry) => entry.ingredientName.trim() && Number(entry.grams) > 0)
+      .map((entry) => ({
+        ingredient: entry.ingredientName.trim(),
+        gramsPerPortion: Number(entry.grams),
+      }));
 
-    if (!name || !Number.isFinite(price) || !Number.isFinite(stock) || price <= 0 || stock < 0) {
+    if (!name || !Number.isFinite(price) || price <= 0) {
       return;
     }
 
@@ -303,14 +293,15 @@ export const usePosApp = () => {
       name,
       price,
       category: newProduct.category,
-      stock,
+      stock: 0,
       createdBy: "admin",
+      recipe: recipe.length > 0 ? recipe : undefined,
     };
 
     setProducts((prev) => [productToAdd, ...prev]);
     void upsertProductToSupabase(productToAdd);
 
-    setNewProduct({ name: "", price: "", category: "Minuman", stock: "" });
+    setNewProduct({ name: "", price: "", category: "Minuman", recipe: [{ ingredientName: "", grams: "" }] });
     setIsAddMenuOpen(false);
   };
 
@@ -327,21 +318,26 @@ export const usePosApp = () => {
       name: product.name,
       price: String(product.price),
       category: product.category,
-      stock: String(product.stock),
+      recipe: (product.recipe ?? []).map((item) => ({ ingredientName: item.ingredient, grams: String(item.gramsPerPortion) })),
     });
   };
 
   const handleCloseEditProduct = () => {
     setEditingProductId(null);
-    setProductDraft({ name: "", price: "", category: "Minuman", stock: "" });
+    setProductDraft({ name: "", price: "", category: "Minuman", recipe: [{ ingredientName: "", grams: "" }] });
   };
 
   const handleSaveProductEdit = (id: string) => {
     const name = productDraft.name.trim();
     const price = Number(productDraft.price);
-    const stock = Number(productDraft.stock);
+    const recipe = (productDraft.recipe ?? [])
+      .filter((entry) => entry.ingredientName.trim() && Number(entry.grams) > 0)
+      .map((entry) => ({
+        ingredient: entry.ingredientName.trim(),
+        gramsPerPortion: Number(entry.grams),
+      }));
 
-    if (!name || !Number.isFinite(price) || !Number.isFinite(stock) || price <= 0 || stock < 0) {
+    if (!name || !Number.isFinite(price) || price <= 0) {
       return;
     }
 
@@ -350,8 +346,9 @@ export const usePosApp = () => {
       name,
       price,
       category: productDraft.category,
-      stock,
+      stock: 0,
       createdBy: "admin",
+      recipe: recipe.length > 0 ? recipe : undefined,
     };
 
     setProducts((prev) =>
@@ -366,18 +363,95 @@ export const usePosApp = () => {
     handleCloseEditProduct();
   };
 
-  const handleRestockProduct = (id: string, amount = 10) => {
-    setProducts((prev) => {
-      const nextProducts = prev.map((product) =>
-        product.id === id ? { ...product, stock: product.stock + amount } : product
-      );
+  const handleRestockProduct = (_id: string, _amount = 10) => {
+    return;
+  };
 
-      const target = nextProducts.find((product) => product.id === id);
-      if (target) {
-        void upsertProductToSupabase(target);
+  const handleRestockIngredient = (ingredientName: string, grams: number) => {
+    if (!Number.isFinite(grams) || grams <= 0) return;
+
+    setRawMaterialStock((prev) =>
+      prev.map((item) =>
+        item.name.toLowerCase() === ingredientName.toLowerCase()
+          ? { ...item, stockGrams: Number((item.stockGrams + grams).toFixed(2)) }
+          : item
+      )
+    );
+  };
+
+  const handleAddRawMaterial = (event?: React.FormEvent<HTMLFormElement>) => {
+    event?.preventDefault();
+
+    const name = rawMaterialDraft.name.trim();
+    const stockGrams = Number(rawMaterialDraft.stockGrams);
+    const minimumStockGrams = Number(rawMaterialDraft.minimumStockGrams);
+
+    if (!name || !Number.isFinite(stockGrams) || !Number.isFinite(minimumStockGrams) || stockGrams < 0 || minimumStockGrams < 0) {
+      return;
+    }
+
+    const newMaterial: RawMaterialStock = {
+      id: `raw-${Date.now()}`,
+      name,
+      stockGrams: Number(stockGrams.toFixed(2)),
+      minimumStockGrams: Number(minimumStockGrams.toFixed(2)),
+      unit: "gram",
+    };
+
+    setRawMaterialStock((prev) => {
+      const exists = prev.some((item) => item.name.toLowerCase() === name.toLowerCase());
+      if (exists) {
+        return prev.map((item) =>
+          item.name.toLowerCase() === name.toLowerCase()
+            ? { ...item, stockGrams: Number((item.stockGrams + stockGrams).toFixed(2)), minimumStockGrams: Number(minimumStockGrams.toFixed(2)) }
+            : item
+        );
       }
 
-      return nextProducts;
+      return [newMaterial, ...prev];
+    });
+
+    setRawMaterialDraft({ name: "", stockGrams: "", minimumStockGrams: "" });
+  };
+
+  const handleUpdateRawMaterial = (id: string) => {
+    const name = rawMaterialDraft.name.trim();
+    const stockGrams = Number(rawMaterialDraft.stockGrams);
+    const minimumStockGrams = Number(rawMaterialDraft.minimumStockGrams);
+
+    if (!name || !Number.isFinite(stockGrams) || !Number.isFinite(minimumStockGrams) || stockGrams < 0 || minimumStockGrams < 0) return;
+
+    setRawMaterialStock((prev) =>
+      prev.map((item) =>
+        item.id === id
+          ? {
+              ...item,
+              name,
+              stockGrams: Number(stockGrams.toFixed(2)),
+              minimumStockGrams: Number(minimumStockGrams.toFixed(2)),
+            }
+          : item
+      )
+    );
+
+    setEditingRawMaterialId(null);
+    setRawMaterialDraft({ name: "", stockGrams: "", minimumStockGrams: "" });
+  };
+
+  const handleDeleteRawMaterial = (id: string) => {
+    setRawMaterialStock((prev) => prev.filter((item) => item.id !== id));
+    if (editingRawMaterialId === id) {
+      setEditingRawMaterialId(null);
+      setRawMaterialDraft({ name: "", stockGrams: "", minimumStockGrams: "" });
+    }
+  };
+
+  const handleStartEditRawMaterial = (material: RawMaterialStock) => {
+    setEditingRawMaterialId(material.id);
+    setRawMaterialDraft({
+      name: material.name,
+      stockGrams: String(material.stockGrams),
+      minimumStockGrams: String(material.minimumStockGrams),
     });
   };
 
@@ -458,6 +532,19 @@ export const usePosApp = () => {
     amountPaid: number,
     orderType: "Dine In" | "Takeaway"
   ) => {
+    if (cart.length === 0) return;
+
+    let nextMaterialStock = [...rawMaterialStock];
+
+    for (const cartItem of cart) {
+      const product = products.find((item) => item.id === cartItem.id);
+      if (!product?.recipe || product.recipe.length === 0) continue;
+
+      nextMaterialStock = applyBomDeduction(nextMaterialStock, product.recipe, cartItem.quantity);
+    }
+
+    setRawMaterialStock(nextMaterialStock);
+
     const transaction: Transaction = {
       id: `TRX-${Date.now()}`,
       items: cart.map((item) => ({
@@ -568,6 +655,10 @@ export const usePosApp = () => {
     setRestockProductId,
     restockQty,
     setRestockQty,
+    rawMaterialDraft,
+    setRawMaterialDraft,
+    editingRawMaterialId,
+    setEditingRawMaterialId,
     paymentDialogOpen,
     setPaymentDialogOpen,
     receiptDialogOpen,
@@ -600,6 +691,9 @@ export const usePosApp = () => {
     accessibleProducts,
     filteredProducts,
     lowStockProducts,
+    lowStockIngredients,
+    rawMaterialStock,
+    setRawMaterialStock,
     totalAmount,
     totalItems,
     addToCart,
@@ -613,6 +707,11 @@ export const usePosApp = () => {
     handleCloseEditProduct,
     handleSaveProductEdit,
     handleRestockProduct,
+    handleRestockIngredient,
+    handleAddRawMaterial,
+    handleUpdateRawMaterial,
+    handleDeleteRawMaterial,
+    handleStartEditRawMaterial,
     handleStartEditUser,
     handleCloseEditUser,
     handleSaveUserEdit,

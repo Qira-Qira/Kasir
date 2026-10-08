@@ -1,12 +1,13 @@
 import { TrendingUp, BadgeCheck, PackageSearch } from "lucide-react";
 import { Badge } from "../components/ui/badge";
-import type { Product } from "../types";
+import type { Product, RawMaterialStock } from "../types";
 
 interface DashboardViewProps {
   lowStockProducts: Product[];
+  lowStockIngredients?: RawMaterialStock[];
 }
 
-export function DashboardView({ lowStockProducts }: DashboardViewProps) {
+export function DashboardView({ lowStockProducts, lowStockIngredients = [] }: DashboardViewProps) {
   return (
     <div className="space-y-4 sm:space-y-5">
       <div className="grid gap-4 md:grid-cols-[1.2fr_0.8fr] xl:grid-cols-[1.5fr_1fr]">
@@ -128,18 +129,31 @@ export function DashboardView({ lowStockProducts }: DashboardViewProps) {
         </div>
 
         <div className="mt-5 space-y-3">
-          {lowStockProducts.length > 0 ? (
-            lowStockProducts.map((product) => (
-              <div key={product.id} className="flex items-center justify-between gap-3 rounded-2xl bg-[#f8f0e7] p-3">
-                <div>
-                  <p className="font-medium text-[#2b1d18]">{product.name}</p>
-                  <p className="text-xs text-[#7d685f]">{product.category}</p>
+          {lowStockProducts.length > 0 || lowStockIngredients.length > 0 ? (
+            <>
+              {lowStockProducts.map((product) => (
+                <div key={product.id} className="flex items-center justify-between gap-3 rounded-2xl bg-[#f8f0e7] p-3">
+                  <div>
+                    <p className="font-medium text-[#2b1d18]">{product.name}</p>
+                    <p className="text-xs text-[#7d685f]">{product.category}</p>
+                  </div>
+                  <span className="rounded-full bg-[#f8d7d7] px-2.5 py-1 text-xs font-semibold text-[#9b3b34]">
+                    {product.stock} left
+                  </span>
                 </div>
-                <span className="rounded-full bg-[#f8d7d7] px-2.5 py-1 text-xs font-semibold text-[#9b3b34]">
-                  {product.stock} left
-                </span>
-              </div>
-            ))
+              ))}
+              {lowStockIngredients.map((ingredient) => (
+                <div key={ingredient.id} className="flex items-center justify-between gap-3 rounded-2xl bg-[#f4e6d7] p-3">
+                  <div>
+                    <p className="font-medium text-[#2b1d18]">{ingredient.name}</p>
+                    <p className="text-xs text-[#7d685f]">Threshold {ingredient.minimumStockGrams} g</p>
+                  </div>
+                  <span className="rounded-full bg-[#f8d7d7] px-2.5 py-1 text-xs font-semibold text-[#9b3b34]">
+                    {ingredient.stockGrams} g
+                  </span>
+                </div>
+              ))}
+            </>
           ) : (
             <div className="rounded-2xl bg-[#f8f0e7] p-4 text-sm text-[#7d685f]">Semua stok aman.</div>
           )}

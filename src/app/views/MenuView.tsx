@@ -134,8 +134,7 @@ export function MenuView({
               name={product.name}
               price={product.price}
               category={product.category}
-              stock={product.stock}
-              disabled={auth?.role === "investor" || product.stock <= 0}
+              disabled={auth?.role === "investor"}
               onAdd={() => onAddToCart(product)}
             />
           ))}

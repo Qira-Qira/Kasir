@@ -10,9 +10,9 @@ import {
 import type { Product, RawMaterialStock, UserAccount, RoleConfig, Role } from "../types";
 
 export const RAW_MATERIALS_STOCK: RawMaterialStock[] = [
-  { id: "raw-bubuk-kopi", name: "Bubuk Kopi", stockGrams: 5000, minimumStockGrams: 300, unit: "gram" },
-  { id: "raw-susu", name: "Susu", stockGrams: 2500, minimumStockGrams: 500, unit: "gram" },
-  { id: "raw-gula-aren", name: "Gula Aren", stockGrams: 2000, minimumStockGrams: 250, unit: "gram" },
+  { id: "raw-bubuk-kopi", name: "Bubuk Kopi", stockGrams: 5000, hppPerUnit: 2000, unit: "gram" },
+  { id: "raw-susu", name: "Susu", stockGrams: 2500, hppPerUnit: 3500, unit: "ml" },
+  { id: "raw-gula-aren", name: "Gula Aren", stockGrams: 2000, hppPerUnit: 1500, unit: "gram" },
 ];
 
 export const MOCK_PRODUCTS: Product[] = [

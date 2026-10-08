@@ -82,7 +82,12 @@ export const usePosApp = () => {
   const [userPage, setUserPage] = useState(1);
   const [restockProductId, setRestockProductId] = useState<string | null>(null);
   const [restockQty, setRestockQty] = useState("10");
-  const [rawMaterialDraft, setRawMaterialDraft] = useState({ name: "", stockGrams: "", minimumStockGrams: "" });
+  const [rawMaterialDraft, setRawMaterialDraft] = useState({
+    name: "",
+    stockGrams: "",
+    hppPerUnit: "",
+    unit: "gram" as "gram" | "ml",
+  });
   const [editingRawMaterialId, setEditingRawMaterialId] = useState<string | null>(null);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [receiptDialogOpen, setReceiptDialogOpen] = useState(false);
@@ -384,9 +389,10 @@ export const usePosApp = () => {
 
     const name = rawMaterialDraft.name.trim();
     const stockGrams = Number(rawMaterialDraft.stockGrams);
-    const minimumStockGrams = Number(rawMaterialDraft.minimumStockGrams);
+    const hppPerUnit = Number(rawMaterialDraft.hppPerUnit);
+    const unit = rawMaterialDraft.unit;
 
-    if (!name || !Number.isFinite(stockGrams) || !Number.isFinite(minimumStockGrams) || stockGrams < 0 || minimumStockGrams < 0) {
+    if (!name || !Number.isFinite(stockGrams) || !Number.isFinite(hppPerUnit) || stockGrams < 0 || hppPerUnit < 0) {
       return;
     }
 
@@ -394,8 +400,8 @@ export const usePosApp = () => {
       id: `raw-${Date.now()}`,
       name,
       stockGrams: Number(stockGrams.toFixed(2)),
-      minimumStockGrams: Number(minimumStockGrams.toFixed(2)),
-      unit: "gram",
+      hppPerUnit: Number(hppPerUnit.toFixed(2)),
+      unit,
     };
 
     setRawMaterialStock((prev) => {
@@ -403,7 +409,12 @@ export const usePosApp = () => {
       if (exists) {
         return prev.map((item) =>
           item.name.toLowerCase() === name.toLowerCase()
-            ? { ...item, stockGrams: Number((item.stockGrams + stockGrams).toFixed(2)), minimumStockGrams: Number(minimumStockGrams.toFixed(2)) }
+            ? {
+                ...item,
+                stockGrams: Number((item.stockGrams + stockGrams).toFixed(2)),
+                hppPerUnit: Number(hppPerUnit.toFixed(2)),
+                unit,
+              }
             : item
         );
       }
@@ -411,15 +422,16 @@ export const usePosApp = () => {
       return [newMaterial, ...prev];
     });
 
-    setRawMaterialDraft({ name: "", stockGrams: "", minimumStockGrams: "" });
+    setRawMaterialDraft({ name: "", stockGrams: "", hppPerUnit: "", unit: "gram" });
   };
 
   const handleUpdateRawMaterial = (id: string) => {
     const name = rawMaterialDraft.name.trim();
     const stockGrams = Number(rawMaterialDraft.stockGrams);
-    const minimumStockGrams = Number(rawMaterialDraft.minimumStockGrams);
+    const hppPerUnit = Number(rawMaterialDraft.hppPerUnit);
+    const unit = rawMaterialDraft.unit;
 
-    if (!name || !Number.isFinite(stockGrams) || !Number.isFinite(minimumStockGrams) || stockGrams < 0 || minimumStockGrams < 0) return;
+    if (!name || !Number.isFinite(stockGrams) || !Number.isFinite(hppPerUnit) || stockGrams < 0 || hppPerUnit < 0) return;
 
     setRawMaterialStock((prev) =>
       prev.map((item) =>
@@ -428,21 +440,22 @@ export const usePosApp = () => {
               ...item,
               name,
               stockGrams: Number(stockGrams.toFixed(2)),
-              minimumStockGrams: Number(minimumStockGrams.toFixed(2)),
+              hppPerUnit: Number(hppPerUnit.toFixed(2)),
+              unit,
             }
           : item
       )
     );
 
     setEditingRawMaterialId(null);
-    setRawMaterialDraft({ name: "", stockGrams: "", minimumStockGrams: "" });
+    setRawMaterialDraft({ name: "", stockGrams: "", hppPerUnit: "", unit: "gram" });
   };
 
   const handleDeleteRawMaterial = (id: string) => {
     setRawMaterialStock((prev) => prev.filter((item) => item.id !== id));
     if (editingRawMaterialId === id) {
       setEditingRawMaterialId(null);
-      setRawMaterialDraft({ name: "", stockGrams: "", minimumStockGrams: "" });
+      setRawMaterialDraft({ name: "", stockGrams: "", hppPerUnit: "", unit: "gram" });
     }
   };
 
@@ -451,7 +464,8 @@ export const usePosApp = () => {
     setRawMaterialDraft({
       name: material.name,
       stockGrams: String(material.stockGrams),
-      minimumStockGrams: String(material.minimumStockGrams),
+      hppPerUnit: String(material.hppPerUnit),
+      unit: material.unit,
     });
   };
 

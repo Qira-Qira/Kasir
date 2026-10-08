@@ -5,9 +5,9 @@ import type { RawMaterialStock } from "../types";
 
 interface StockViewProps {
   rawMaterialStock: RawMaterialStock[];
-  rawMaterialDraft: { name: string; stockGrams: string; minimumStockGrams: string };
+  rawMaterialDraft: { name: string; stockGrams: string; hppPerUnit: string; unit: "gram" | "ml" };
   editingRawMaterialId: string | null;
-  setRawMaterialDraft: (value: { name: string; stockGrams: string; minimumStockGrams: string }) => void;
+  setRawMaterialDraft: (value: { name: string; stockGrams: string; hppPerUnit: string; unit: "gram" | "ml" }) => void;
   setEditingRawMaterialId: (value: string | null) => void;
   handleAddRawMaterial: (event?: React.FormEvent<HTMLFormElement>) => void;
   handleUpdateRawMaterial: (id: string) => void;
@@ -42,7 +42,7 @@ export function StockView({
     .filter((material) => material.name.toLowerCase().includes(stockSearch.toLowerCase()))
     .sort((a, b) => a.stockGrams - b.stockGrams);
 
-  const totalCritical = rawMaterialStock.filter((item) => item.stockGrams <= item.minimumStockGrams).length;
+  const totalCritical = rawMaterialStock.filter((item) => item.stockGrams <= 0).length;
 
   return (
     <div className="flex min-h-0 flex-col space-y-4 overflow-hidden sm:space-y-5">
@@ -91,7 +91,7 @@ export function StockView({
           </div>
 
           <div>
-            <label className="mb-2 block text-sm font-medium text-[#4d382f]">Stok awal (g)</label>
+            <label className="mb-2 block text-sm font-medium text-[#4d382f]">Stok awal</label>
             <Input
               type="number"
               min="0"
@@ -103,15 +103,25 @@ export function StockView({
           </div>
 
           <div>
-            <label className="mb-2 block text-sm font-medium text-[#4d382f]">Minimum (g)</label>
-            <Input
-              type="number"
-              min="0"
-              value={rawMaterialDraft.minimumStockGrams}
-              onChange={(event) => setRawMaterialDraft({ ...rawMaterialDraft, minimumStockGrams: event.target.value })}
-              placeholder="300"
-              className="h-11 rounded-2xl border-[#ebdcc7] bg-[#fffaf5] text-[#2b1d18]"
-            />
+            <label className="mb-2 block text-sm font-medium text-[#4d382f]">HPP / satuan</label>
+            <div className="flex items-center gap-2">
+              <Input
+                type="number"
+                min="0"
+                value={rawMaterialDraft.hppPerUnit}
+                onChange={(event) => setRawMaterialDraft({ ...rawMaterialDraft, hppPerUnit: event.target.value })}
+                placeholder="2000"
+                className="h-11 flex-1 rounded-2xl border-[#ebdcc7] bg-[#fffaf5] text-[#2b1d18]"
+              />
+              <select
+                value={rawMaterialDraft.unit}
+                onChange={(event) => setRawMaterialDraft({ ...rawMaterialDraft, unit: event.target.value as "gram" | "ml" })}
+                className="h-11 rounded-2xl border border-[#ebdcc7] bg-[#fffaf5] px-2 text-sm text-[#2b1d18]"
+              >
+                <option value="gram">gram</option>
+                <option value="ml">ml</option>
+              </select>
+            </div>
           </div>
 
           <div className="md:col-span-3 flex justify-end gap-2">
@@ -120,7 +130,7 @@ export function StockView({
                 type="button"
                 onClick={() => {
                   setEditingRawMaterialId(null);
-                  setRawMaterialDraft({ name: "", stockGrams: "", minimumStockGrams: "" });
+                  setRawMaterialDraft({ name: "", stockGrams: "", hppPerUnit: "", unit: "gram" });
                 }}
                 className="rounded-2xl border border-[#e7d4ba] bg-[#fffaf5] px-4 py-2.5 text-sm font-medium text-[#4d382f]"
               >
@@ -156,22 +166,27 @@ export function StockView({
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <p className="font-medium text-[#2b1d18]">{material.name}</p>
-                    <p className="mt-1 text-[11px] text-[#7d685f]">Threshold: {material.minimumStockGrams} g</p>
+                    <p className="mt-1 text-[11px] text-[#7d685f]">{material.unit === "gram" ? "HPP / gram" : "HPP / ml"}</p>
                   </div>
-                  <span className={`rounded-full px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] ${material.stockGrams <= material.minimumStockGrams ? "bg-[#f8d7d7] text-[#9b3b34]" : "bg-[#edf3ef] text-[#2d5b45]"}`}>
-                    {material.stockGrams <= material.minimumStockGrams ? "Low" : "Good"}
+                  <span className={`rounded-full px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] ${material.stockGrams <= 0 ? "bg-[#f8d7d7] text-[#9b3b34]" : "bg-[#edf3ef] text-[#2d5b45]"}`}>
+                    {material.stockGrams <= 0 ? "Kosong" : "Aman"}
                   </span>
                 </div>
 
                 <div className="mt-4 grid grid-cols-2 gap-2 text-sm text-[#5f493d]">
                   <div className="rounded-xl bg-[#f8f0e7] p-2">
                     <p className="text-[10px] uppercase tracking-[0.14em] text-[#8d6d5a]">Stok</p>
-                    <p className="mt-1 font-semibold text-[#2b1d18]">{material.stockGrams} g</p>
+                    <p className="mt-1 font-semibold text-[#2b1d18]">{material.stockGrams} {material.unit}</p>
                   </div>
                   <div className="rounded-xl bg-[#f8f0e7] p-2">
-                    <p className="text-[10px] uppercase tracking-[0.14em] text-[#8d6d5a]">Min</p>
-                    <p className="mt-1 font-semibold text-[#2b1d18]">{material.minimumStockGrams} g</p>
+                    <p className="text-[10px] uppercase tracking-[0.14em] text-[#8d6d5a]">Subtotal</p>
+                    <p className="mt-1 font-semibold text-[#2b1d18]">{formatCurrency(material.stockGrams * material.hppPerUnit)}</p>
                   </div>
+                </div>
+
+                <div className="mt-4 rounded-xl bg-[#f8f0e7] p-2 text-sm text-[#5f493d]">
+                  <p className="text-[10px] uppercase tracking-[0.14em] text-[#8d6d5a]">HPP / satuan</p>
+                  <p className="mt-1 font-semibold text-[#2b1d18]">{formatCurrency(material.hppPerUnit)} / {material.unit}</p>
                 </div>
 
                 <div className="mt-4 flex flex-wrap gap-2">
@@ -184,12 +199,12 @@ export function StockView({
                   <button
                     type="button"
                     onClick={() => {
-                      const input = window.prompt(`Masukkan jumlah stok untuk ${material.name} (gram):`, "500");
+                      const input = window.prompt(`Masukkan jumlah stok untuk ${material.name} (${material.unit}):`, "500");
                       if (input === null) return;
 
                       const nextAmount = Number(input);
                       if (!Number.isFinite(nextAmount) || nextAmount <= 0) {
-                        window.alert("Jumlah stok harus angka lebih dari 0 gram.");
+                        window.alert(`Jumlah stok harus angka lebih dari 0 ${material.unit}.`);
                         return;
                       }
 

@@ -3,12 +3,14 @@ export interface BomRecipeItem {
   gramsPerPortion: number;
 }
 
+export type RawMaterialUnit = "gram" | "ml";
+
 export interface RawMaterialStock {
   id: string;
   name: string;
   stockGrams: number;
-  minimumStockGrams: number;
-  unit: "gram";
+  hppPerUnit: number;
+  unit: RawMaterialUnit;
 }
 
 export const convertKgToGrams = (kilogram: number) => {
@@ -43,4 +45,4 @@ export const applyBomDeduction = (
 };
 
 export const getLowStockIngredients = (inventory: RawMaterialStock[]) =>
-  inventory.filter((item) => item.stockGrams <= item.minimumStockGrams);
+  inventory.filter((item) => item.stockGrams <= 0);

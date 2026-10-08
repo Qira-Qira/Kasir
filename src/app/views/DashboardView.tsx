@@ -146,10 +146,10 @@ export function DashboardView({ lowStockProducts, lowStockIngredients = [] }: Da
                 <div key={ingredient.id} className="flex items-center justify-between gap-3 rounded-2xl bg-[#f4e6d7] p-3">
                   <div>
                     <p className="font-medium text-[#2b1d18]">{ingredient.name}</p>
-                    <p className="text-xs text-[#7d685f]">Threshold {ingredient.minimumStockGrams} g</p>
+                    <p className="text-xs text-[#7d685f]">Satuan {ingredient.unit}</p>
                   </div>
                   <span className="rounded-full bg-[#f8d7d7] px-2.5 py-1 text-xs font-semibold text-[#9b3b34]">
-                    {ingredient.stockGrams} g
+                    {ingredient.stockGrams} {ingredient.unit}
                   </span>
                 </div>
               ))}

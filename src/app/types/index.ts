@@ -18,12 +18,14 @@ export interface ProductRecipeDraftItem {
   grams: string;
 }
 
+export type RawMaterialUnit = "gram" | "ml";
+
 export interface RawMaterialStock {
   id: string;
   name: string;
   stockGrams: number;
-  minimumStockGrams: number;
-  unit: "gram";
+  hppPerUnit: number;
+  unit: RawMaterialUnit;
 }
 
 export interface Product {

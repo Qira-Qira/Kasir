@@ -1,13 +1,22 @@
 import { Coffee, Cookie, LayoutGrid, UtensilsCrossed } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
-export const formatCurrency = (value: number) =>
-  new Intl.NumberFormat("id-ID", {
+export const formatCurrency = (value: number) => {
+  if (Number.isInteger(value)) {
+    return new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
+      maximumFractionDigits: 0,
+    }).format(value);
+  }
+
+  return new Intl.NumberFormat("id-ID", {
     style: "currency",
     currency: "IDR",
-    minimumFractionDigits: 0,
+    minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(value);
+};
 
 export const getCurrentTime = () => {
   const now = new Date();

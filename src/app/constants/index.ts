@@ -1,4 +1,5 @@
 import {
+  Banknote,
   BarChart3,
   BriefcaseBusiness,
   History,
@@ -108,6 +109,7 @@ export const ROLE_CONFIG: Record<Role, RoleConfig> = {
     navItems: [
       { key: "Menu", label: "Menu", icon: ListOrdered },
       { key: "Stok", label: "Stok", icon: Package },
+      { key: "Shift", label: "Shift", icon: Banknote },
       { key: "Laporan", label: "Laporan", icon: BarChart3 },
       { key: "Riwayat", label: "Riwayat", icon: History },
       { key: "Pengaturan", label: "Kelola Menu", icon: ListOrdered },
@@ -129,6 +131,7 @@ export const ROLE_CONFIG: Record<Role, RoleConfig> = {
     label: "Kasir",
     navItems: [
       { key: "Menu", label: "Menu", icon: ListOrdered },
+      { key: "Shift", label: "Shift", icon: Banknote },
       { key: "Laporan", label: "Laporan", icon: BarChart3 },
       { key: "Riwayat", label: "Riwayat", icon: History },
     ],

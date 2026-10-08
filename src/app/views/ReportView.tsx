@@ -1,12 +1,26 @@
 import { BarChart3, ChartNoAxesCombined, CircleDollarSign, Clock, ShoppingCart, TrendingUp } from "lucide-react";
 import type { Dispatch, SetStateAction } from "react";
+import { buildShiftSummaryRows } from "../lib/shift";
+import type { ReportShift } from "../types";
 
 type ReportRange = "Hari Ini" | "7 Hari Terakhir" | "Bulanan" | "Custom Date";
-type ReportShift = "Semua Shift" | "Shift 1" | "Shift 2";
 type ReportBranch = "Semua Cabang" | "Cabang Utama" | "Cabang 2";
 
 interface ReportViewProps {
   products?: Array<{ name: string; category: string }>;
+  shiftHistory?: Array<{
+    startingCash: number;
+    actualCash: number;
+    pettyCashOut: number;
+    difference: number;
+  }>;
+  currentShiftState?: {
+    status: "OPEN" | "CLOSED";
+    startingCash: number;
+    pettyCashOut: number;
+    actualCash: number;
+    difference: number;
+  };
   report?: {
     kpiCards?: Array<{ label: string; value: string; change: string; color?: string }>;
     bestSellerMenu?: Array<{ name: string; qty: number; revenue: string }>;
@@ -40,9 +54,9 @@ interface ReportViewProps {
   setReportEndDate: Dispatch<SetStateAction<string>>;
 }
 
-export function ReportView({ products = [], report, reportRange, setReportRange, reportShift, setReportShift, reportBranch, setReportBranch, reportStartDate, setReportStartDate, reportEndDate, setReportEndDate, }: ReportViewProps) {
+export function ReportView({ products = [], report, shiftHistory = [], currentShiftState, reportRange, setReportRange, reportShift, setReportShift, reportBranch, setReportBranch, reportStartDate, setReportStartDate, reportEndDate, setReportEndDate, }: ReportViewProps) {
   const rangeOptions = ["Hari Ini", "7 Hari Terakhir", "Bulanan", "Custom Date"] as const;
-  const shiftOptions = ["Semua Shift", "Shift 1", "Shift 2"] as const;
+  const shiftOptions = ["Semua Shift", ...shiftHistory.map((_, index) => `Shift ${index + 1}`)] as const;
   const branchOptions = ["Semua Cabang", "Cabang Utama", "Cabang 2"] as const;
 
   const kpiCards = report?.kpiCards ?? [
@@ -89,12 +103,20 @@ export function ReportView({ products = [], report, reportRange, setReportRange,
     { label: "Online Delivery", value: 18, amount: "Rp 7.600.000" },
   ];
 
-  const shiftSummary = report?.shiftSummary ?? [
-    { label: "Kas Awal", value: "Rp 2.500.000" },
-    { label: "Kas Akhir", value: "Rp 2.940.000" },
-    { label: "Petty Cash", value: "Rp 210.000" },
-    { label: "Selisih Kas", value: "Rp 230.000" },
-  ];
+  const effectiveShiftHistory = currentShiftState && currentShiftState.status === "OPEN"
+    ? [{
+        startingCash: currentShiftState.startingCash,
+        actualCash: currentShiftState.actualCash,
+        pettyCashOut: currentShiftState.pettyCashOut,
+        difference: currentShiftState.difference,
+      }, ...shiftHistory]
+    : shiftHistory;
+
+  const filteredShiftHistory = reportShift === "Semua Shift"
+    ? effectiveShiftHistory
+    : effectiveShiftHistory.filter((_, index) => `Shift ${index + 1}` === reportShift);
+
+  const shiftSummary = report?.shiftSummary ?? buildShiftSummaryRows(filteredShiftHistory.length > 0 ? filteredShiftHistory : effectiveShiftHistory);
 
   const promoSummary = report?.promoSummary ?? [
     { label: "Total Diskon", value: "Rp 1.940.000" },

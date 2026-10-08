@@ -20,6 +20,7 @@ import { DashboardView } from "./views/DashboardView";
 import { MenuView } from "./views/MenuView";
 import { ReportView } from "./views/ReportView";
 import { SettingsView } from "./views/SettingsView";
+import { ShiftView } from "./views/ShiftView";
 import { StockView } from "./views/StockView";
 import { TransactionHistoryView } from "./views/TransactionHistoryView";
 import { useEffect, useState } from "react";
@@ -124,6 +125,10 @@ export default function App() {
     setStockCategory,
     setStockPage,
     setSettingsPage,
+    shiftState,
+    shiftHistory,
+    handleOpenShift,
+    handleCloseShift,
     setUserDeleteUsername,
     setProducts,
   } = appState;
@@ -241,6 +246,8 @@ export default function App() {
           <ReportView
             products={products}
             report={serverReport ?? undefined}
+            shiftHistory={shiftHistory}
+            currentShiftState={shiftState}
             reportRange={reportRange}
             setReportRange={setReportRange}
             reportShift={reportShift}
@@ -279,6 +286,19 @@ export default function App() {
             stockPage={stockPage}
             setStockPage={setStockPage}
             formatCurrency={formatCurrency}
+          />
+        );
+      case "Shift":
+        return (
+          <ShiftView
+            shiftState={shiftState}
+            shiftHistory={shiftHistory}
+            cashSalesTotal={transactions
+              .filter((transaction) => transaction.paymentMethod === "Cash" && transaction.isCompleted)
+              .reduce((sum, transaction) => sum + transaction.total, 0)}
+            formatCurrency={formatCurrency}
+            onOpenShift={handleOpenShift}
+            onCloseShift={(actualCash, movements) => handleCloseShift(actualCash, movements)}
           />
         );
       case "Pengaturan":

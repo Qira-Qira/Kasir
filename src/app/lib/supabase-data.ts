@@ -1,11 +1,21 @@
 import { MOCK_PRODUCTS, RAW_MATERIALS_STOCK, USER_ACCOUNTS } from "../constants";
-import type { Product, RawMaterialStock, Transaction, TransactionItem, UserAccount } from "../types";
+import type { Product, RawMaterialStock, ShiftSession, Transaction, TransactionItem, UserAccount } from "../types";
 import { ensureSystemSugarLevelAddons } from "./addons";
 import { hasSupabaseConfig, supabase } from "./supabase";
 
 const fallbackProducts = () => MOCK_PRODUCTS.map((product) => ({ ...product }));
 const fallbackUsers = () => USER_ACCOUNTS.map((user) => ({ ...user }));
 const fallbackRawMaterials = () => RAW_MATERIALS_STOCK.map((material) => ({ ...material }));
+const fallbackShiftSessions = (): ShiftSession[] => {
+  if (typeof window === "undefined") return [];
+
+  try {
+    const stored = window.localStorage.getItem("kasir-shift-sessions");
+    return stored ? (JSON.parse(stored) as ShiftSession[]) : [];
+  } catch {
+    return [];
+  }
+};
 
 export const normalizeProduct = (row: Partial<Product> & Record<string, unknown>): Product => {
   const parseJsonArray = <T>(value: unknown, fallback: T[]): T[] => {
@@ -77,6 +87,21 @@ const normalizeRawMaterial = (row: Partial<RawMaterialStock> & Record<string, un
   stockGrams: Number(row.stockGrams ?? row.stock_grams ?? 0),
   hppPerUnit: Number(row.hppPerUnit ?? row.hpp_per_unit ?? 0),
   unit: (row.unit ?? "gram") as RawMaterialStock["unit"],
+});
+
+const normalizeShiftSession = (row: Partial<ShiftSession> & Record<string, unknown>): ShiftSession => ({
+  id: String(row.id ?? crypto.randomUUID()),
+  status: (row.status ?? "CLOSED") as ShiftSession["status"],
+  openedAt: row.openedAt ?? row.opened_at ?? null,
+  closedAt: row.closedAt ?? row.closed_at ?? null,
+  startingCash: Number(row.startingCash ?? row.starting_cash ?? 0),
+  cashSales: Number(row.cashSales ?? row.cash_sales ?? 0),
+  pettyCashOut: Number(row.pettyCashOut ?? row.petty_cash_out ?? 0),
+  cashIn: Number(row.cashIn ?? row.cash_in ?? 0),
+  expectedCash: Number(row.expectedCash ?? row.expected_cash ?? 0),
+  actualCash: Number(row.actualCash ?? row.actual_cash ?? 0),
+  difference: Number(row.difference ?? 0),
+  note: typeof row.note === "string" ? row.note : undefined,
 });
 
 export async function getProductsFromSupabase(): Promise<Product[]> {
@@ -231,6 +256,57 @@ export async function deleteUserFromSupabase(username: string): Promise<void> {
   if (error) {
     console.warn("Supabase user delete failed:", error.message);
   }
+}
+
+export async function getShiftSessionsFromSupabase(): Promise<ShiftSession[]> {
+  if (!hasSupabaseConfig || !supabase) {
+    return fallbackShiftSessions();
+  }
+
+  const { data, error } = await supabase.from("shift_sessions").select("*").order("closed_at", { ascending: false });
+
+  if (error) {
+    console.warn("Supabase shift session fetch failed:", error.message);
+    return fallbackShiftSessions();
+  }
+
+  return (data ?? []).map((row) => normalizeShiftSession(row as Partial<ShiftSession> & Record<string, unknown>));
+}
+
+export async function upsertShiftSessionToSupabase(session: ShiftSession): Promise<ShiftSession | null> {
+  if (!hasSupabaseConfig || !supabase) {
+    const existing = fallbackShiftSessions();
+    const next = [session, ...existing.filter((item) => item.id !== session.id)];
+
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("kasir-shift-sessions", JSON.stringify(next));
+    }
+    return session;
+  }
+
+  const payload = {
+    id: session.id,
+    status: session.status,
+    opened_at: session.openedAt,
+    closed_at: session.closedAt,
+    starting_cash: Number(session.startingCash ?? 0),
+    cash_sales: Number(session.cashSales ?? 0),
+    petty_cash_out: Number(session.pettyCashOut ?? 0),
+    cash_in: Number(session.cashIn ?? 0),
+    expected_cash: Number(session.expectedCash ?? 0),
+    actual_cash: Number(session.actualCash ?? 0),
+    difference: Number(session.difference ?? 0),
+    note: session.note ?? "",
+  };
+
+  const { data, error } = await supabase.from("shift_sessions").upsert(payload, { onConflict: "id" }).select().single();
+
+  if (error) {
+    console.warn("Supabase shift save failed:", error.message);
+    return null;
+  }
+
+  return normalizeShiftSession(data as Partial<ShiftSession> & Record<string, unknown>);
 }
 
 export async function getTransactionsFromSupabase(): Promise<Transaction[]> {

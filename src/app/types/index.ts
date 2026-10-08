@@ -1,11 +1,11 @@
 import type { LucideIcon } from "lucide-react";
 
 export type Role = "admin" | "investor" | "kasir";
-export type ViewKey = "Menu" | "Laporan" | "Riwayat" | "Stok" | "Dashboard" | "Pengaturan" | "Akun";
+export type ViewKey = "Menu" | "Laporan" | "Riwayat" | "Stok" | "Dashboard" | "Shift" | "Pengaturan" | "Akun";
 export type PaymentMethod = "Cash" | "QRIS" | "Debit" | "Transfer";
 export type OrderType = "Dine In" | "Takeaway";
 export type ReportRange = "Hari Ini" | "7 Hari Terakhir" | "Bulanan" | "Custom Date";
-export type ReportShift = "Semua Shift" | "Shift 1" | "Shift 2";
+export type ReportShift = "Semua Shift" | `Shift ${number}`;
 export type ReportBranch = "Semua Cabang" | "Cabang Utama" | "Cabang 2";
 
 export interface BomRecipeItem {
@@ -106,6 +106,21 @@ export interface UserAccount {
   password: string;
   role: Role;
   name: string;
+}
+
+export interface ShiftSession {
+  id: string;
+  status: "OPEN" | "CLOSED";
+  openedAt: string | null;
+  closedAt: string | null;
+  startingCash: number;
+  cashSales: number;
+  pettyCashOut: number;
+  cashIn: number;
+  expectedCash: number;
+  actualCash: number;
+  difference: number;
+  note?: string;
 }
 
 export interface RoleConfig {

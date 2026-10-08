@@ -7,6 +7,7 @@ import {
   getLowStockIngredients,
   isValidRawMaterialUnit,
 } from "./bom";
+import { buildShiftSummaryRows, calculateShiftVariance } from "./shift";
 import { formatCurrency } from "../utils";
 
 test("konversi kg ke gram mengikuti rumus 1 kg = 1000 gram", () => {
@@ -38,6 +39,39 @@ test("satuan bahan baku dapat berupa pcs", () => {
 test("formatCurrency menampilkan desimal untuk nilai HPP pecahan", () => {
   assert.equal(formatCurrency(1250.5), "Rp 1.250,50");
   assert.equal(formatCurrency(2000), "Rp 2.000");
+});
+
+test("rumus varians shift menghitung selisih kas dengan benar", () => {
+  const variance = calculateShiftVariance({
+    startingCash: 500000,
+    cashSales: 250000,
+    pettyCashOut: 30000,
+    actualCash: 720000,
+  });
+
+  assert.equal(variance, 0);
+});
+
+test("ringkasan shift mengambil nilai terakhir dari sesi kas yang ditutup", () => {
+  const rows = buildShiftSummaryRows([
+    {
+      startingCash: 500000,
+      actualCash: 720000,
+      pettyCashOut: 30000,
+      difference: 0,
+    },
+    {
+      startingCash: 400000,
+      actualCash: 610000,
+      pettyCashOut: 20000,
+      difference: 10000,
+    },
+  ]);
+
+  assert.deepEqual(rows[0], { label: "Kas Awal", value: "Rp 500.000" });
+  assert.deepEqual(rows[1], { label: "Kas Akhir", value: "Rp 720.000" });
+  assert.deepEqual(rows[2], { label: "Petty Cash", value: "Rp 30.000" });
+  assert.deepEqual(rows[3], { label: "Selisih Kas", value: "Rp 0" });
 });
 
 test("stok yang habis atau nol ditandai sebagai bahan baku rendah", () => {

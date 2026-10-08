@@ -9,18 +9,21 @@ import {
 } from "../constants";
 import { applyBomDeduction, convertKgToGrams, getLowStockIngredients } from "../lib/bom";
 import { buildCartItemLineId, getSugarLevelDeductionGrams, resolveSelectedAddons } from "../lib/addons";
+import { calculateExpectedCash, calculateShiftVariance } from "../lib/shift";
 import {
   deleteProductFromSupabase,
   deleteRawMaterialFromSupabase,
   deleteUserFromSupabase,
   getProductsFromSupabase,
   getRawMaterialsFromSupabase,
+  getShiftSessionsFromSupabase,
   getTransactionsFromSupabase,
   getUsersFromSupabase,
   insertTransactionToSupabase,
   upsertProductToSupabase,
   updateTransactionStatusInSupabase,
   upsertRawMaterialToSupabase,
+  upsertShiftSessionToSupabase,
   upsertUserToSupabase,
 } from "../lib/supabase-data";
 import type {
@@ -29,7 +32,9 @@ import type {
   CartItemType,
   Product,
   RawMaterialStock,
+  ReportShift,
   Role,
+  ShiftSession,
   Transaction,
   UserAccount,
   ViewKey,
@@ -55,7 +60,7 @@ export const usePosApp = () => {
 
     try {
       const stored = window.localStorage.getItem("kasir-activeView");
-      const allowed = ["Menu", "Laporan", "Riwayat", "Stok", "Dashboard", "Pengaturan", "Akun"] as const;
+      const allowed = ["Menu", "Laporan", "Riwayat", "Stok", "Dashboard", "Shift", "Pengaturan", "Akun"] as const;
       if (stored && (allowed as readonly string[]).includes(stored)) {
         return stored as ViewKey;
       }
@@ -110,7 +115,7 @@ export const usePosApp = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [currentTransaction, setCurrentTransaction] = useState<Transaction | null>(null);
   const [reportRange, setReportRange] = useState<"Hari Ini" | "7 Hari Terakhir" | "Bulanan" | "Custom Date">("7 Hari Terakhir");
-  const [reportShift, setReportShift] = useState<"Semua Shift" | "Shift 1" | "Shift 2">("Semua Shift");
+  const [reportShift, setReportShift] = useState<ReportShift>("Semua Shift");
   const [reportBranch, setReportBranch] = useState<"Semua Cabang" | "Cabang Utama" | "Cabang 2">("Semua Cabang");
   const [reportStartDate, setReportStartDate] = useState<string>(() => {
     if (typeof window === "undefined") return "";
@@ -132,10 +137,66 @@ export const usePosApp = () => {
     const d = new Date();
     return d.toISOString().slice(0, 10);
   });
+  const [shiftState, setShiftState] = useState(() => {
+    if (typeof window === "undefined") {
+      return {
+        status: "CLOSED" as "OPEN" | "CLOSED",
+        startingCash: 0,
+        cashSales: 0,
+        pettyCashOut: 0,
+        cashIn: 0,
+        expectedCash: 0,
+        actualCash: 0,
+        difference: 0,
+        openedAt: null as string | null,
+      };
+    }
+
+    try {
+      const stored = window.localStorage.getItem("kasir-shift-state");
+      if (stored) {
+        return JSON.parse(stored) as {
+          status: "OPEN" | "CLOSED";
+          startingCash: number;
+          cashSales: number;
+          pettyCashOut: number;
+          cashIn: number;
+          expectedCash: number;
+          actualCash: number;
+          difference: number;
+          openedAt: string | null;
+        };
+      }
+    } catch {
+      // ignore
+    }
+
+    return {
+      status: "CLOSED" as "OPEN" | "CLOSED",
+      startingCash: 0,
+      cashSales: 0,
+      pettyCashOut: 0,
+      cashIn: 0,
+      expectedCash: 0,
+      actualCash: 0,
+      difference: 0,
+      openedAt: null as string | null,
+    };
+  });
   const [stockSearch, setStockSearch] = useState("");
   const [stockCategory, setStockCategory] = useState("Semua");
   const [stockPage, setStockPage] = useState(1);
   const [settingsPage, setSettingsPage] = useState(1);
+  const [shiftHistory, setShiftHistory] = useState<ShiftSession[]>(() => {
+    if (typeof window === "undefined") return [];
+
+    try {
+      const stored = window.localStorage.getItem("kasir-shift-sessions");
+      return stored ? (JSON.parse(stored) as ShiftSession[]) : [];
+    } catch {
+      return [];
+    }
+  });
   const [currentTime, setCurrentTime] = useState(getCurrentTime());
 
   const categories = CATEGORIES;
@@ -176,6 +237,26 @@ export const usePosApp = () => {
   }, [reportEndDate]);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    try {
+      window.localStorage.setItem("kasir-shift-state", JSON.stringify(shiftState));
+    } catch {
+      // ignore
+    }
+  }, [shiftState]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    try {
+      window.localStorage.setItem("kasir-shift-sessions", JSON.stringify(shiftHistory));
+    } catch {
+      // ignore
+    }
+  }, [shiftHistory]);
+
+  useEffect(() => {
     const interval = setInterval(() => {
       setCurrentTime(getCurrentTime());
     }, 1000);
@@ -187,11 +268,12 @@ export const usePosApp = () => {
     let isMounted = true;
 
     const hydrateData = async () => {
-      const [nextProducts, nextUsers, nextRawMaterials, nextTransactions] = await Promise.all([
+      const [nextProducts, nextUsers, nextRawMaterials, nextTransactions, nextShiftSessions] = await Promise.all([
         getProductsFromSupabase(),
         getUsersFromSupabase(),
         getRawMaterialsFromSupabase(),
         getTransactionsFromSupabase(),
+        getShiftSessionsFromSupabase(),
       ]);
 
       if (!isMounted) return;
@@ -200,6 +282,7 @@ export const usePosApp = () => {
       setSystemUsers(nextUsers);
       setRawMaterialStock(nextRawMaterials);
       setTransactions(nextTransactions);
+      setShiftHistory(nextShiftSessions);
     };
 
     void hydrateData();
@@ -784,6 +867,84 @@ export const usePosApp = () => {
     });
   };
 
+  const handleOpenShift = (startingCash: number) => {
+    if (!Number.isFinite(startingCash) || startingCash < 0) return;
+    if (shiftState.status === "OPEN") return;
+
+    setShiftState({
+      status: "OPEN",
+      startingCash: Number(startingCash.toFixed(2)),
+      cashSales: 0,
+      pettyCashOut: 0,
+      cashIn: 0,
+      expectedCash: Number(startingCash.toFixed(2)),
+      actualCash: 0,
+      difference: 0,
+      openedAt: new Date().toISOString(),
+    });
+  };
+
+  const handleCloseShift = (
+    actualCash: number,
+    movements?: { pettyCashOut?: number; cashIn?: number; note?: string },
+  ) => {
+    if (!Number.isFinite(actualCash) || actualCash < 0) return;
+    if (shiftState.status === "CLOSED") return;
+
+    const cashSalesTotal = transactions
+      .filter((transaction) => transaction.paymentMethod === "Cash" && transaction.isCompleted)
+      .reduce((sum, transaction) => sum + transaction.total, 0);
+
+    const pettyCashOut = Number(movements?.pettyCashOut ?? shiftState.pettyCashOut ?? 0);
+    const cashIn = Number(movements?.cashIn ?? shiftState.cashIn ?? 0);
+    const note = movements?.note?.trim();
+
+    const expectedCash = calculateExpectedCash({
+      startingCash: shiftState.startingCash,
+      cashSales: cashSalesTotal,
+      pettyCashOut,
+      cashIn,
+    });
+
+    const difference = calculateShiftVariance({
+      startingCash: shiftState.startingCash,
+      cashSales: cashSalesTotal,
+      pettyCashOut,
+      cashIn,
+      actualCash,
+    });
+
+    const closedShift: ShiftSession = {
+      id: shiftState.openedAt ? `shift-${shiftState.openedAt}` : `shift-${Date.now()}`,
+      status: "CLOSED",
+      openedAt: shiftState.openedAt,
+      closedAt: new Date().toISOString(),
+      startingCash: shiftState.startingCash,
+      cashSales: cashSalesTotal,
+      pettyCashOut,
+      cashIn,
+      expectedCash: Number(expectedCash.toFixed(2)),
+      actualCash: Number(actualCash.toFixed(2)),
+      difference: Number(difference.toFixed(2)),
+      note,
+    };
+
+    setShiftState({
+      status: "CLOSED",
+      startingCash: shiftState.startingCash,
+      cashSales: cashSalesTotal,
+      pettyCashOut,
+      cashIn,
+      expectedCash: Number(expectedCash.toFixed(2)),
+      actualCash: Number(actualCash.toFixed(2)),
+      difference: Number(difference.toFixed(2)),
+      openedAt: shiftState.openedAt,
+    });
+
+    setShiftHistory((prev) => [closedShift, ...prev.filter((item) => item.id !== closedShift.id)]);
+    void upsertShiftSessionToSupabase(closedShift);
+  };
+
   const handleLogin = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
@@ -898,6 +1059,10 @@ export const usePosApp = () => {
     setStockPage,
     settingsPage,
     setSettingsPage,
+    shiftState,
+    shiftHistory,
+    handleOpenShift,
+    handleCloseShift,
     categories,
     currentTime,
     visibleNavItems,

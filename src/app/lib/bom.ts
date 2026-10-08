@@ -3,7 +3,7 @@ export interface BomRecipeItem {
   gramsPerPortion: number;
 }
 
-export type RawMaterialUnit = "gram" | "ml";
+export type RawMaterialUnit = "gram" | "ml" | "pcs";
 
 export interface RawMaterialStock {
   id: string;
@@ -12,6 +12,9 @@ export interface RawMaterialStock {
   hppPerUnit: number;
   unit: RawMaterialUnit;
 }
+
+export const isValidRawMaterialUnit = (unit: string): unit is RawMaterialUnit =>
+  unit === "gram" || unit === "ml" || unit === "pcs";
 
 export const convertKgToGrams = (kilogram: number) => {
   const safeKg = Number.isFinite(Number(kilogram)) ? Number(kilogram) : 0;

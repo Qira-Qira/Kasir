@@ -102,7 +102,7 @@ export const usePosApp = () => {
     name: "",
     stockGrams: "",
     hppPerUnit: "",
-    unit: "gram" as "gram" | "ml",
+    unit: "gram" as "gram" | "ml" | "pcs",
   });
   const [editingRawMaterialId, setEditingRawMaterialId] = useState<string | null>(null);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);

@@ -5,7 +5,9 @@ import {
   applyBomDeduction,
   convertKgToGrams,
   getLowStockIngredients,
+  isValidRawMaterialUnit,
 } from "./bom";
+import { formatCurrency } from "../utils";
 
 test("konversi kg ke gram mengikuti rumus 1 kg = 1000 gram", () => {
   assert.equal(convertKgToGrams(5), 5000);
@@ -24,6 +26,18 @@ test("pengurangan BOM berbasis resep mengurangi stok bahan baku per porsi yang t
 
   assert.equal(next[0].stockGrams, 4946);
   assert.equal(next[1].stockGrams, 1940);
+});
+
+test("satuan bahan baku dapat berupa pcs", () => {
+  assert.equal(isValidRawMaterialUnit("pcs"), true);
+  assert.equal(isValidRawMaterialUnit("gram"), true);
+  assert.equal(isValidRawMaterialUnit("ml"), true);
+  assert.equal(isValidRawMaterialUnit("liter"), false);
+});
+
+test("formatCurrency menampilkan desimal untuk nilai HPP pecahan", () => {
+  assert.equal(formatCurrency(1250.5), "Rp 1.250,50");
+  assert.equal(formatCurrency(2000), "Rp 2.000");
 });
 
 test("stok yang habis atau nol ditandai sebagai bahan baku rendah", () => {

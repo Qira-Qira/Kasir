@@ -5,9 +5,9 @@ import type { RawMaterialStock } from "../types";
 
 interface StockViewProps {
   rawMaterialStock: RawMaterialStock[];
-  rawMaterialDraft: { name: string; stockGrams: string; hppPerUnit: string; unit: "gram" | "ml" };
+  rawMaterialDraft: { name: string; stockGrams: string; hppPerUnit: string; unit: "gram" | "ml" | "pcs" };
   editingRawMaterialId: string | null;
-  setRawMaterialDraft: (value: { name: string; stockGrams: string; hppPerUnit: string; unit: "gram" | "ml" }) => void;
+  setRawMaterialDraft: (value: { name: string; stockGrams: string; hppPerUnit: string; unit: "gram" | "ml" | "pcs" }) => void;
   setEditingRawMaterialId: (value: string | null) => void;
   handleAddRawMaterial: (event?: React.FormEvent<HTMLFormElement>) => void;
   handleUpdateRawMaterial: (id: string) => void;
@@ -54,7 +54,7 @@ export function StockView({
             </div>
             <h3 className="text-base font-semibold text-[#2b1d18] sm:text-lg">Master Bahan Baku</h3>
           </div>
-          <Badge className="w-fit rounded-full bg-[#edf3ef] text-[#2d5b45]">Satuan: gram</Badge>
+          <Badge className="w-fit rounded-full bg-[#edf3ef] text-[#2d5b45]">Satuan: gram / ml / pcs</Badge>
         </div>
 
         <form onSubmit={(event) => {
@@ -93,6 +93,8 @@ export function StockView({
               <Input
                 type="number"
                 min="0"
+                step="0.01"
+                inputMode="decimal"
                 value={rawMaterialDraft.hppPerUnit}
                 onChange={(event) => setRawMaterialDraft({ ...rawMaterialDraft, hppPerUnit: event.target.value })}
                 placeholder="2000"
@@ -100,11 +102,12 @@ export function StockView({
               />
               <select
                 value={rawMaterialDraft.unit}
-                onChange={(event) => setRawMaterialDraft({ ...rawMaterialDraft, unit: event.target.value as "gram" | "ml" })}
+                onChange={(event) => setRawMaterialDraft({ ...rawMaterialDraft, unit: event.target.value as "gram" | "ml" | "pcs" })}
                 className="h-11 rounded-2xl border border-[#ebdcc7] bg-[#fffaf5] px-2 text-sm text-[#2b1d18]"
               >
                 <option value="gram">gram</option>
                 <option value="ml">ml</option>
+                <option value="pcs">pcs</option>
               </select>
             </div>
           </div>
@@ -151,7 +154,13 @@ export function StockView({
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <p className="font-medium text-[#2b1d18]">{material.name}</p>
-                    <p className="mt-1 text-[11px] text-[#7d685f]">{material.unit === "gram" ? "HPP / gram" : "HPP / ml"}</p>
+                    <p className="mt-1 text-[11px] text-[#7d685f]">
+                      {material.unit === "gram"
+                        ? "HPP / gram"
+                        : material.unit === "ml"
+                          ? "HPP / ml"
+                          : "HPP / pcs"}
+                    </p>
                   </div>
                   {material.stockGrams <= 0 && (
                     <span className="rounded-full bg-[#f8d7d7] px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#9b3b34]">

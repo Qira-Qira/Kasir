@@ -18,7 +18,7 @@ export interface ProductRecipeDraftItem {
   grams: string;
 }
 
-export type RawMaterialUnit = "gram" | "ml";
+export type RawMaterialUnit = "gram" | "ml" | "pcs";
 
 export interface RawMaterialStock {
   id: string;

@@ -262,7 +262,6 @@ export default function App() {
             handleRestockIngredient={appState.handleRestockIngredient}
             stockSearch={stockSearch}
             setStockSearch={setStockSearch}
-            setStockCategory={setStockCategory}
             stockPage={stockPage}
             setStockPage={setStockPage}
             formatCurrency={formatCurrency}

@@ -5,7 +5,7 @@ import {
   applyBomDeduction,
   convertKgToGrams,
   getLowStockIngredients,
-} from "./bom.ts";
+} from "./bom";
 
 test("konversi kg ke gram mengikuti rumus 1 kg = 1000 gram", () => {
   assert.equal(convertKgToGrams(5), 5000);

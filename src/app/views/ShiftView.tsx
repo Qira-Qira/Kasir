@@ -41,6 +41,11 @@ export function ShiftView({
   const [cashInInput, setCashInInput] = useState("0");
   const [actualCashInput, setActualCashInput] = useState("0");
   const [closingNote, setClosingNote] = useState("");
+  // empty string means "no filter" (show all)
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+  const [page, setPage] = useState(1);
+  const itemsPerPage = 5;
 
   const expectedCashPreview = useMemo(() => {
     if (shiftState.status === "OPEN") {
@@ -140,6 +145,7 @@ export function ShiftView({
                     className="h-11 rounded-2xl border-[#ebdcc7] bg-[#f9f2ea] pl-10 text-[#2b1d18] placeholder:text-[#9a8479]"
                   />
                 </div>
+                <p className="mt-1 text-xs text-[#5d4235]">Masukkan jumlah kas yang dimasukkan ke laci (menambah kas akhir).</p>
               </div>
 
               <div>
@@ -156,6 +162,7 @@ export function ShiftView({
                     className="h-11 rounded-2xl border-[#ebdcc7] bg-[#f9f2ea] pl-10 text-[#2b1d18] placeholder:text-[#9a8479]"
                   />
                 </div>
+                <p className="mt-1 text-xs text-[#5d4235]">Masukkan pengeluaran kecil (mengurangi kas akhir).</p>
               </div>
             </div>
 
@@ -219,25 +226,101 @@ export function ShiftView({
       {(shiftHistory.length > 0 || shiftState.status === "CLOSED") && (
         <div className="rounded-[22px] border border-[#eddcc3] bg-[#fffaf5] p-4 shadow-[0_12px_24px_rgba(88,63,46,0.04)] sm:rounded-[24px] sm:p-5">
           <h4 className="text-base font-semibold text-[#2b1d18]">Riwayat Shift</h4>
+
+          <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-2">
+              <label className="text-sm text-[#5d4235]">Dari</label>
+              <input
+                type="date"
+                value={fromDate}
+                onChange={(e) => {
+                  setFromDate(e.target.value);
+                  setPage(1);
+                }}
+                className="rounded-md border px-2 py-1"
+              />
+              <label className="text-sm text-[#5d4235]">Sampai</label>
+              <input
+                type="date"
+                value={toDate}
+                onChange={(e) => {
+                  setToDate(e.target.value);
+                  setPage(1);
+                }}
+                className="rounded-md border px-2 py-1"
+              />
+            </div>
+
+            <div className="flex items-center gap-3">
+              <p className="text-sm text-[#5d4235]">Menampilkan:</p>
+              <p className="text-sm font-semibold text-[#2b1d18]">{itemsPerPage} per halaman</p>
+            </div>
+          </div>
+
           <div className="mt-3 space-y-2">
-            {shiftHistory.slice(0, 3).map((session) => (
-              <div key={session.id} className="rounded-2xl border border-[#ebdcc7] bg-[#f8f0e7] p-3">
-                <div className="flex items-center justify-between gap-3">
-                  <p className="text-sm font-medium text-[#2b1d18]">
-                    {session.closedAt ? new Date(session.closedAt).toLocaleString("id-ID") : "Shift belum ditutup"}
-                  </p>
-                  <span className={`rounded-full px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] ${session.difference === 0 ? "bg-[#edf3ef] text-[#2d5b45]" : session.difference < 0 ? "bg-[#f8d7d7] text-[#9b3b34]" : "bg-[#f3e9dc] text-[#5d4235]"}`}>
-                    {session.difference === 0 ? "Seimbang" : session.difference < 0 ? "Kurang" : "Lebih"}
-                  </span>
-                </div>
-                <div className="mt-2 text-xs text-[#5d4235]">
-                  <p>Kas awal: {formatCurrency(session.startingCash)}</p>
-                  <p>Actual: {formatCurrency(session.actualCash)} | Expected: {formatCurrency(session.expectedCash)}</p>
-                  <p>Selisih: {formatCurrency(session.difference)}</p>
-                  {session.note ? <p>Catatan: {session.note}</p> : null}
-                </div>
-              </div>
-            ))}
+            {(() => {
+              const filtered = (fromDate && toDate)
+                ? shiftHistory.filter((session) => {
+                    const ts = session.closedAt ?? session.openedAt ?? null;
+                    if (!ts) return false;
+                    const start = new Date(fromDate + "T00:00:00");
+                    const end = new Date(toDate + "T23:59:59.999");
+                    const d = new Date(ts);
+                    return d >= start && d <= end;
+                  })
+                : shiftHistory.slice();
+
+              const total = filtered.length;
+              const totalPages = Math.max(1, Math.ceil(total / itemsPerPage));
+              const currentPage = Math.min(Math.max(1, page), totalPages);
+              const pageSlice = filtered.slice((currentPage - 1) * itemsPerPage, (currentPage - 1) * itemsPerPage + itemsPerPage);
+
+              return (
+                <>
+                  {pageSlice.map((session) => (
+                    <div key={session.id} className="rounded-2xl border border-[#ebdcc7] bg-[#f8f0e7] p-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="text-sm font-medium text-[#2b1d18]">
+                          {session.closedAt ? new Date(session.closedAt).toLocaleString("id-ID") : "Shift belum ditutup"}
+                        </p>
+                        <span className={`rounded-full px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] ${session.difference === 0 ? "bg-[#edf3ef] text-[#2d5b45]" : session.difference < 0 ? "bg-[#f8d7d7] text-[#9b3b34]" : "bg-[#f3e9dc] text-[#5d4235]"}`}>
+                          {session.difference === 0 ? "Seimbang" : session.difference < 0 ? "Kurang" : "Lebih"}
+                        </span>
+                      </div>
+                      <div className="mt-2 text-xs text-[#5d4235]">
+                        <p>Kas awal: {formatCurrency(session.startingCash)}</p>
+                        <p>Actual: {formatCurrency(session.actualCash)} | Expected: {formatCurrency(session.expectedCash)}</p>
+                        <p>Selisih: {formatCurrency(session.difference)}</p>
+                        {session.note ? <p>Catatan: {session.note}</p> : null}
+                      </div>
+                    </div>
+                  ))}
+
+                  <div className="mt-3 flex items-center justify-between">
+                    <p className="text-sm text-[#5d4235]">Total: {filtered.length} sesi</p>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setPage((p) => Math.max(1, p - 1))}
+                        disabled={page <= 1}
+                        className="rounded-md border px-3 py-1 disabled:opacity-50"
+                      >
+                        Prev
+                      </button>
+                      <span className="text-sm">{currentPage} / {totalPages}</span>
+                      <button
+                        type="button"
+                        onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                        disabled={page >= totalPages}
+                        className="rounded-md border px-3 py-1 disabled:opacity-50"
+                      >
+                        Next
+                      </button>
+                    </div>
+                  </div>
+                </>
+              );
+            })()}
           </div>
         </div>
       )}

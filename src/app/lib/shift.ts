@@ -73,10 +73,21 @@ export const buildShiftSummaryRows = (sessions: ShiftSessionSummary[] = []) => {
       .replace(/\u00a0/g, " ");
   };
 
+  const expected = calculateExpectedCash({
+    startingCash: snapshot.startingCash,
+    cashSales: (snapshot as any).cashSales ?? 0,
+    cashIn: (snapshot as any).cashIn ?? 0,
+    pettyCashOut: snapshot.pettyCashOut ?? 0,
+  });
+
+  const difference = Number.isFinite(snapshot.difference ?? NaN)
+    ? Number(snapshot.difference)
+    : Number((snapshot.actualCash - expected).toFixed(2));
+
   return [
     { label: "Kas Awal", value: formatCurrency(snapshot.startingCash) },
     { label: "Kas Akhir", value: formatCurrency(snapshot.actualCash) },
     { label: "Petty Cash", value: formatCurrency(snapshot.pettyCashOut ?? 0) },
-    { label: "Selisih Kas", value: formatCurrency(snapshot.difference ?? snapshot.actualCash - (snapshot.startingCash + (snapshot.pettyCashOut ?? 0))) },
+    { label: "Selisih Kas", value: formatCurrency(difference) },
   ];
 };

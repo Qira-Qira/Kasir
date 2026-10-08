@@ -821,6 +821,16 @@ export const usePosApp = () => {
     setRawMaterialStock(nextMaterialStock);
     void Promise.all(nextMaterialStock.map((item) => upsertRawMaterialToSupabase(item)));
 
+    const normalizePaymentMethod = (pm: string) => {
+      const key = String(pm ?? "").toLowerCase();
+      if (key === "cash" || key === "tunai") return "Cash";
+      if (key === "qris") return "QRIS";
+      if (key === "debit") return "Debit";
+      if (key === "transfer") return "Transfer";
+      // fallback: capitalize
+      return pm.charAt(0).toUpperCase() + pm.slice(1);
+    };
+
     const transaction: Transaction = {
       id: `TRX-${Date.now()}`,
       items: cart.map((item) => ({
@@ -834,7 +844,7 @@ export const usePosApp = () => {
         })),
       })),
       total: totalAmount,
-      paymentMethod,
+      paymentMethod: normalizePaymentMethod(paymentMethod),
       amountPaid,
       orderType,
       date: new Date().toISOString(),

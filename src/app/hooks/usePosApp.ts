@@ -55,7 +55,7 @@ export const usePosApp = () => {
 
     try {
       const stored = window.localStorage.getItem("kasir-activeView");
-      const allowed = ["Menu", "Laporan", "Riwayat", "Stok", "Dashboard", "Pengaturan"] as const;
+      const allowed = ["Menu", "Laporan", "Riwayat", "Stok", "Dashboard", "Pengaturan", "Akun"] as const;
       if (stored && (allowed as readonly string[]).includes(stored)) {
         return stored as ViewKey;
       }

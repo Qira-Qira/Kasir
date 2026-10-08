@@ -15,6 +15,7 @@ import { ROLE_CONFIG } from "./constants";
 import { usePosApp } from "./hooks/usePosApp";
 import { getServerSideProps } from "./server/getServerSideProps";
 import { formatCurrency } from "./utils";
+import { AccountView } from "./views/AccountView";
 import { DashboardView } from "./views/DashboardView";
 import { MenuView } from "./views/MenuView";
 import { ReportView } from "./views/ReportView";
@@ -284,22 +285,27 @@ export default function App() {
         return (
           <SettingsView
             products={products}
-            systemUsers={systemUsers}
             menuSearch={menuSearch}
             setMenuSearch={setMenuSearch}
             settingsPage={settingsPage}
             setSettingsPage={setSettingsPage}
+            handleStartEditProduct={handleStartEditProduct}
+            setProductToDeleteId={setProductToDeleteId}
+            setIsAddMenuOpen={setIsAddMenuOpen}
+            formatCurrency={formatCurrency}
+          />
+        );
+      case "Akun":
+        return (
+          <AccountView
+            systemUsers={systemUsers}
             userSearch={userSearch}
             setUserSearch={setUserSearch}
             userPage={userPage}
             setUserPage={setUserPage}
-            handleStartEditProduct={handleStartEditProduct}
-            setProductToDeleteId={setProductToDeleteId}
             handleStartEditUser={handleStartEditUser}
             setUserDeleteUsername={setUserDeleteUsername}
-            setIsAddMenuOpen={setIsAddMenuOpen}
             setIsAddUserModalOpen={setIsAddUserModalOpen}
-            formatCurrency={formatCurrency}
           />
         );
       default:

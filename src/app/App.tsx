@@ -343,7 +343,7 @@ export default function App() {
           open={Boolean(productToDeleteId)}
           title="Hapus Menu"
           targetName={products.find((product) => product.id === productToDeleteId)?.name || "Produk"}
-          meta={`${products.find((product) => product.id === productToDeleteId)?.category || "Kategori"} • ${products.find((product) => product.id === productToDeleteId)?.stock || 0} g`}
+          meta={products.find((product) => product.id === productToDeleteId)?.category || "Kategori"}
           description="Tindakan ini akan menghapus menu dari katalog dan tidak dapat dipilih saat transaksi berikutnya."
           confirmLabel="Hapus Menu"
           onCancel={() => setProductToDeleteId(null)}

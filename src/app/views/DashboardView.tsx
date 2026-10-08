@@ -138,7 +138,7 @@ export function DashboardView({ lowStockProducts, lowStockIngredients = [] }: Da
                     <p className="text-xs text-[#7d685f]">{product.category}</p>
                   </div>
                   <span className="rounded-full bg-[#f8d7d7] px-2.5 py-1 text-xs font-semibold text-[#9b3b34]">
-                    {product.stock} left
+                    Menu
                   </span>
                 </div>
               ))}

@@ -1,16 +1,16 @@
-import { MOCK_PRODUCTS, USER_ACCOUNTS } from "../constants";
-import type { Product, Transaction, UserAccount } from "../types";
+import { MOCK_PRODUCTS, RAW_MATERIALS_STOCK, USER_ACCOUNTS } from "../constants";
+import type { Product, RawMaterialStock, Transaction, UserAccount } from "../types";
 import { hasSupabaseConfig, supabase } from "./supabase";
 
 const fallbackProducts = () => MOCK_PRODUCTS.map((product) => ({ ...product }));
 const fallbackUsers = () => USER_ACCOUNTS.map((user) => ({ ...user }));
+const fallbackRawMaterials = () => RAW_MATERIALS_STOCK.map((material) => ({ ...material }));
 
 const normalizeProduct = (row: Partial<Product> & Record<string, unknown>): Product => ({
   id: String(row.id ?? crypto.randomUUID()),
   name: String(row.name ?? ""),
   price: Number(row.price ?? 0),
   category: String(row.category ?? "Minuman"),
-  stock: Number(row.stock ?? 0),
   createdBy: (row.created_by ?? row.createdBy ?? "admin") as "admin" | "system" | undefined,
 });
 
@@ -19,6 +19,14 @@ const normalizeUser = (row: Partial<UserAccount> & Record<string, unknown>): Use
   password: String(row.password ?? ""),
   role: (row.role ?? "kasir") as UserAccount["role"],
   name: String(row.name ?? row.username ?? ""),
+});
+
+const normalizeRawMaterial = (row: Partial<RawMaterialStock> & Record<string, unknown>): RawMaterialStock => ({
+  id: String(row.id ?? crypto.randomUUID()),
+  name: String(row.name ?? ""),
+  stockGrams: Number(row.stockGrams ?? row.stock_grams ?? 0),
+  hppPerUnit: Number(row.hppPerUnit ?? row.hpp_per_unit ?? 0),
+  unit: (row.unit ?? "gram") as RawMaterialStock["unit"],
 });
 
 export async function getProductsFromSupabase(): Promise<Product[]> {
@@ -54,6 +62,21 @@ export async function getUsersFromSupabase(): Promise<UserAccount[]> {
   return (data ?? []).map((row) => normalizeUser(row as Partial<UserAccount> & Record<string, unknown>));
 }
 
+export async function getRawMaterialsFromSupabase(): Promise<RawMaterialStock[]> {
+  if (!hasSupabaseConfig || !supabase) {
+    return fallbackRawMaterials();
+  }
+
+  const { data, error } = await supabase.from("raw_materials").select("*").order("created_at", { ascending: false });
+
+  if (error) {
+    console.warn("Supabase raw material fetch failed:", error.message);
+    return fallbackRawMaterials();
+  }
+
+  return (data ?? []).map((row) => normalizeRawMaterial(row as Partial<RawMaterialStock> & Record<string, unknown>));
+}
+
 export async function upsertProductToSupabase(product: Product): Promise<Product | null> {
   if (!hasSupabaseConfig || !supabase) {
     return product;
@@ -64,7 +87,6 @@ export async function upsertProductToSupabase(product: Product): Promise<Product
     name: product.name,
     price: product.price,
     category: product.category,
-    stock: product.stock,
     created_by: product.createdBy ?? "admin",
   };
 
@@ -87,6 +109,41 @@ export async function deleteProductFromSupabase(productId: string): Promise<void
 
   if (error) {
     console.warn("Supabase product delete failed:", error.message);
+  }
+}
+
+export async function upsertRawMaterialToSupabase(material: RawMaterialStock): Promise<RawMaterialStock | null> {
+  if (!hasSupabaseConfig || !supabase) {
+    return material;
+  }
+
+  const payload = {
+    id: material.id,
+    name: material.name,
+    stock_grams: Number(material.stockGrams ?? 0),
+    unit: material.unit,
+    hpp_per_unit: Number(material.hppPerUnit ?? 0),
+  };
+
+  const { data, error } = await supabase.from("raw_materials").upsert(payload, { onConflict: "id" }).select().single();
+
+  if (error) {
+    console.warn("Supabase raw material save failed:", error.message);
+    return null;
+  }
+
+  return normalizeRawMaterial(data as Partial<RawMaterialStock> & Record<string, unknown>);
+}
+
+export async function deleteRawMaterialFromSupabase(materialId: string): Promise<void> {
+  if (!hasSupabaseConfig || !supabase) {
+    return;
+  }
+
+  const { error } = await supabase.from("raw_materials").delete().eq("id", materialId);
+
+  if (error) {
+    console.warn("Supabase raw material delete failed:", error.message);
   }
 }
 

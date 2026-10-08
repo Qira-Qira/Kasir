@@ -3,11 +3,14 @@ import { CATEGORIES, MOCK_PRODUCTS, RAW_MATERIALS_STOCK, ROLE_CONFIG, USER_ACCOU
 import { applyBomDeduction, convertKgToGrams, getLowStockIngredients } from "../lib/bom";
 import {
   deleteProductFromSupabase,
+  deleteRawMaterialFromSupabase,
   deleteUserFromSupabase,
   getProductsFromSupabase,
+  getRawMaterialsFromSupabase,
   getUsersFromSupabase,
   insertTransactionToSupabase,
   upsertProductToSupabase,
+  upsertRawMaterialToSupabase,
   upsertUserToSupabase,
 } from "../lib/supabase-data";
 import type {
@@ -171,15 +174,17 @@ export const usePosApp = () => {
     let isMounted = true;
 
     const hydrateData = async () => {
-      const [nextProducts, nextUsers] = await Promise.all([
+      const [nextProducts, nextUsers, nextRawMaterials] = await Promise.all([
         getProductsFromSupabase(),
         getUsersFromSupabase(),
+        getRawMaterialsFromSupabase(),
       ]);
 
       if (!isMounted) return;
 
       setProducts(nextProducts);
       setSystemUsers(nextUsers);
+      setRawMaterialStock(nextRawMaterials);
     };
 
     void hydrateData();
@@ -298,7 +303,6 @@ export const usePosApp = () => {
       name,
       price,
       category: newProduct.category,
-      stock: 0,
       createdBy: "admin",
       recipe: recipe.length > 0 ? recipe : undefined,
     };
@@ -351,7 +355,6 @@ export const usePosApp = () => {
       name,
       price,
       category: productDraft.category,
-      stock: 0,
       createdBy: "admin",
       recipe: recipe.length > 0 ? recipe : undefined,
     };
@@ -375,13 +378,16 @@ export const usePosApp = () => {
   const handleRestockIngredient = (ingredientName: string, grams: number) => {
     if (!Number.isFinite(grams) || grams <= 0) return;
 
-    setRawMaterialStock((prev) =>
-      prev.map((item) =>
+    setRawMaterialStock((prev) => {
+      const nextState = prev.map((item) =>
         item.name.toLowerCase() === ingredientName.toLowerCase()
           ? { ...item, stockGrams: Number((item.stockGrams + grams).toFixed(2)) }
           : item
-      )
-    );
+      );
+
+      void Promise.all(nextState.map((item) => upsertRawMaterialToSupabase(item)));
+      return nextState;
+    });
   };
 
   const handleAddRawMaterial = (event?: React.FormEvent<HTMLFormElement>) => {
@@ -406,8 +412,10 @@ export const usePosApp = () => {
 
     setRawMaterialStock((prev) => {
       const exists = prev.some((item) => item.name.toLowerCase() === name.toLowerCase());
+      let nextState: RawMaterialStock[];
+
       if (exists) {
-        return prev.map((item) =>
+        nextState = prev.map((item) =>
           item.name.toLowerCase() === name.toLowerCase()
             ? {
                 ...item,
@@ -417,9 +425,16 @@ export const usePosApp = () => {
               }
             : item
         );
+      } else {
+        nextState = [newMaterial, ...prev];
       }
 
-      return [newMaterial, ...prev];
+      const persisted = nextState.find((item) => item.name.toLowerCase() === name.toLowerCase());
+      if (persisted) {
+        void upsertRawMaterialToSupabase(persisted);
+      }
+
+      return nextState;
     });
 
     setRawMaterialDraft({ name: "", stockGrams: "", hppPerUnit: "", unit: "gram" });
@@ -433,8 +448,8 @@ export const usePosApp = () => {
 
     if (!name || !Number.isFinite(stockGrams) || !Number.isFinite(hppPerUnit) || stockGrams < 0 || hppPerUnit < 0) return;
 
-    setRawMaterialStock((prev) =>
-      prev.map((item) =>
+    setRawMaterialStock((prev) => {
+      const nextState = prev.map((item) =>
         item.id === id
           ? {
               ...item,
@@ -444,15 +459,29 @@ export const usePosApp = () => {
               unit,
             }
           : item
-      )
-    );
+      );
+
+      const persisted = nextState.find((item) => item.id === id);
+      if (persisted) {
+        void upsertRawMaterialToSupabase(persisted);
+      }
+
+      return nextState;
+    });
 
     setEditingRawMaterialId(null);
     setRawMaterialDraft({ name: "", stockGrams: "", hppPerUnit: "", unit: "gram" });
   };
 
   const handleDeleteRawMaterial = (id: string) => {
-    setRawMaterialStock((prev) => prev.filter((item) => item.id !== id));
+    setRawMaterialStock((prev) => {
+      const nextState = prev.filter((item) => item.id !== id);
+      const target = prev.find((item) => item.id === id);
+      if (target) {
+        void deleteRawMaterialFromSupabase(target.id);
+      }
+      return nextState;
+    });
     if (editingRawMaterialId === id) {
       setEditingRawMaterialId(null);
       setRawMaterialDraft({ name: "", stockGrams: "", hppPerUnit: "", unit: "gram" });
@@ -558,6 +587,7 @@ export const usePosApp = () => {
     }
 
     setRawMaterialStock(nextMaterialStock);
+    void Promise.all(nextMaterialStock.map((item) => upsertRawMaterialToSupabase(item)));
 
     const transaction: Transaction = {
       id: `TRX-${Date.now()}`,

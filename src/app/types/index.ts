@@ -33,7 +33,6 @@ export interface Product {
   name: string;
   price: number;
   category: string;
-  stock: number;
   createdBy?: "admin" | "system";
   recipe?: BomRecipeItem[];
   minimumStockThreshold?: number;
